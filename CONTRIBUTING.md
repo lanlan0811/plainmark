@@ -80,7 +80,27 @@ push tag v* → Build（构建 + 打包） → 全绿 → Release（自动发版
 
 版本号遵循[语义化版本](https://semver.org/lang/zh-CN/) `vMAJOR.MINOR.PATCH`，tag 名必须与 `src-tauri/tauri.conf.json` 中的 `version` 一致。tag 一经推送即对外发布，不得删除或重打；如需修正请递增 PATCH 号重新发布。
 
-**维护者注意**：请勿移除发版 workflow 中的全绿门控条件，也勿使用 `continue-on-error` 绕过构建失败。
+### 发布说明
+
+每次发版前，必须先提交 `docs/releases/<tag>.md`（如 `docs/releases/v0.1.0.md`），Release 正文取自该文件。
+
+发版流程因此是：
+
+```bash
+# 1. 写发布说明并提交
+vim docs/releases/v0.2.0.md
+git add docs/releases/v0.2.0.md
+git commit -m "docs: 添加 v0.2.0 发布说明"
+git push origin main
+
+# 2. 再打 tag —— 这一步才触发构建与发版
+git tag v0.2.0
+git push origin v0.2.0
+```
+
+说明文件缺失时，发版步骤会直接失败。这是有意为之：不允许发出没有说明的 Release。请勿在 GitHub 网页上手工编辑 Release 正文——那会与仓库中的文件不一致。
+
+**维护者注意**：请勿移除发版 workflow 中的全绿门控条件与发布说明校验，也勿使用 `continue-on-error` 绕过构建失败。
 
 ## 开源协议
 

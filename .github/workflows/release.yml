@@ -18,6 +18,23 @@ jobs:
       github.event.workflow_run.event == 'push' &&
       startsWith(github.event.workflow_run.head_branch, 'v')
     steps:
+      # 发布说明写在仓库里，必须检出代码才能读到
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      # 说明文件是发版的硬性前提：缺失即失败，不允许发出没有说明的 Release
+      - name: Verify release notes exist
+        run: |
+          TAG="${{ github.event.workflow_run.head_branch }}"
+          NOTES="docs/releases/${TAG}.md"
+          if [ ! -f "$NOTES" ]; then
+            echo "::error::缺少发布说明 $NOTES —— 请先提交该文件再打 tag"
+            exit 1
+          fi
+          echo "发布说明：$NOTES"
+
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
@@ -34,7 +51,8 @@ jobs:
         with:
           tag_name: ${{ github.event.workflow_run.head_branch }}
           target_commitish: ${{ github.event.workflow_run.head_sha }}
-          generate_release_notes: true
+          # 正文取自 docs/releases/<tag>.md
+          body_path: docs/releases/${{ github.event.workflow_run.head_branch }}.md
           draft: false
           prerelease: false
           files: dist/**/*
