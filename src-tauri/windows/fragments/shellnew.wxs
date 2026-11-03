@@ -5,6 +5,10 @@
   为什么需要单独写：WiX 没有 NSIS 那样的 installerHooks 机制，只能通过
   fragmentPaths 注入自定义片段。功能与 windows/hooks.nsh 等价，两边必须同步维护。
 
+  为什么只注册 .md：「新建」菜单按扩展名逐条列出，显示名取自该扩展名的类型名。
+  .md 与 .markdown 共用「Markdown 文档」这一个类型名，两个都注册就会出现两条
+  一模一样的条目。记事本同样只给 .txt 注册、不给 .text。
+
   注意：Root 用 HKCU。在 perMachine 安装下，HKCU 写入的是安装者（提权用户）的
   hive，其他用户看不到「新建」项。这正是 tauri.conf.json 选用
   installMode = "currentUser" 的原因之一。
@@ -17,7 +21,6 @@
         Guid="7B2E4C1A-9D3F-4A6B-8E15-2C7F0A9D4B63"
         Win64="yes">
 
-        <!-- .md -->
         <RegistryKey
           Root="HKCU"
           Key="Software\Classes\.md\ShellNew"
@@ -30,16 +33,15 @@
             KeyPath="yes" />
         </RegistryKey>
 
-        <!-- .markdown -->
-        <RegistryKey
+        <!--
+          清理 v0.1.0 的残留：那一版曾给 .markdown 也注册 ShellNew，导致
+          「新建」菜单出现两条重复项。这里在安装时删除它，升级安装即可修复。
+          用 RemoveRegistryKey 而不是 RegistryKey，否则会在安装时把它重新建出来。
+        -->
+        <RemoveRegistryKey
           Root="HKCU"
           Key="Software\Classes\.markdown\ShellNew"
-          Action="createAndRemoveOnUninstall">
-          <RegistryValue
-            Type="string"
-            Name="NullFile"
-            Value="" />
-        </RegistryKey>
+          Action="removeOnInstall" />
 
       </Component>
     </DirectoryRef>

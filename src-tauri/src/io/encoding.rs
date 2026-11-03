@@ -22,18 +22,7 @@ pub enum TextEncoding {
     Utf16Be,
 }
 
-impl TextEncoding {
-    /// 状态栏显示名。UTF-8 BOM 单独标注，便于和记事本核对。
-    pub fn label(self) -> &'static str {
-        match self {
-            TextEncoding::Ansi => "ANSI",
-            TextEncoding::Utf8 => "UTF-8",
-            TextEncoding::Utf8Bom => "UTF-8 BOM",
-            TextEncoding::Utf16Le => "UTF-16 LE",
-            TextEncoding::Utf16Be => "UTF-16 BE",
-        }
-    }
-}
+// 状态栏的显示名在前端维护（见 src/types.ts 的 ENCODING_LABELS）。
 
 /// 解码结果。
 pub struct Decoded {

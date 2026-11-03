@@ -12,25 +12,8 @@ pub enum Eol {
     Cr,
 }
 
-impl Eol {
-    /// 状态栏显示名，与记事本逐字一致。
-    pub fn label(self) -> &'static str {
-        match self {
-            Eol::Crlf => "Windows (CRLF)",
-            Eol::Lf => "Unix (LF)",
-            Eol::Cr => "Macintosh (CR)",
-        }
-    }
-
-    /// 该换行符的实际字符。
-    pub fn as_str(self) -> &'static str {
-        match self {
-            Eol::Crlf => "\r\n",
-            Eol::Lf => "\n",
-            Eol::Cr => "\r",
-        }
-    }
-}
+// 状态栏的显示名在前端维护（见 src/types.ts 的 EOL_LABELS），
+// 换行符的实际字符由 denormalize 直接完成替换，因此这里不需要额外方法。
 
 /// 检测文本使用的换行符。
 ///
