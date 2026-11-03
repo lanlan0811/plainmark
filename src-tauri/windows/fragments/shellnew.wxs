@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  plainmark 的 MSI(WiX) 片段：注册资源管理器右键「新建」菜单项。
+
+  为什么需要单独写：WiX 没有 NSIS 那样的 installerHooks 机制，只能通过
+  fragmentPaths 注入自定义片段。功能与 windows/hooks.nsh 等价，两边必须同步维护。
+
+  注意：Root 用 HKCU。在 perMachine 安装下，HKCU 写入的是安装者（提权用户）的
+  hive，其他用户看不到「新建」项。这正是 tauri.conf.json 选用
+  installMode = "currentUser" 的原因之一。
+-->
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Fragment>
+    <DirectoryRef Id="TARGETDIR">
+      <Component
+        Id="PlainmarkShellNew"
+        Guid="7B2E4C1A-9D3F-4A6B-8E15-2C7F0A9D4B63"
+        Win64="yes">
+
+        <!-- .md -->
+        <RegistryKey
+          Root="HKCU"
+          Key="Software\Classes\.md\ShellNew"
+          Action="createAndRemoveOnUninstall">
+          <!-- NullFile：新建时产生 0 字节文件，与记事本新建文本文档一致 -->
+          <RegistryValue
+            Type="string"
+            Name="NullFile"
+            Value=""
+            KeyPath="yes" />
+        </RegistryKey>
+
+        <!-- .markdown -->
+        <RegistryKey
+          Root="HKCU"
+          Key="Software\Classes\.markdown\ShellNew"
+          Action="createAndRemoveOnUninstall">
+          <RegistryValue
+            Type="string"
+            Name="NullFile"
+            Value="" />
+        </RegistryKey>
+
+      </Component>
+    </DirectoryRef>
+  </Fragment>
+</Wix>
