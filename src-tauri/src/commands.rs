@@ -54,16 +54,21 @@ pub fn close_window(window: Window) -> Result<(), String> {
     window.destroy().map_err(|e| e.to_string())
 }
 
-/// 应用退出。
+/// 退出整个应用。
+///
+/// 与 `close_window` 的区别：后者只关当前窗口，多窗口时其余窗口仍在。
+/// 「文件 → 退出」应该关掉整个应用，与记事本一致。
 #[tauri::command]
 pub fn exit_app(app: AppHandle) {
     app.exit(0);
 }
 
-/// 判断路径是否已存在，用于「另存为」时的覆盖确认。
+/// 取文件的最后修改时间，用于检测外部改动。
+///
+/// 返回 None 表示文件不存在或无法访问——调用方据此判断文件已被删除/移动。
 #[tauri::command]
-pub fn path_exists(path: String) -> bool {
-    Path::new(&path).exists()
+pub fn file_modified_ms(path: String) -> Option<u64> {
+    io::modified_ms(Path::new(&path))
 }
 
 /// 打开帮助页面（项目主页）。

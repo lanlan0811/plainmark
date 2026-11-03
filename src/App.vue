@@ -194,14 +194,15 @@ function doCloseTab(id: number) {
 }
 
 async function doExit() {
-  const closeWindow = () => void api.closeWindow();
+  // 「文件 → 退出」关掉整个应用，而不是只关当前窗口
+  const quit = () => void api.exitApp();
   const dirty = docs.tabs.value.find((t) => t.dirty);
   if (dirty) {
     docs.activate(dirty.id);
-    guardUnsaved(closeWindow);
+    guardUnsaved(quit);
     return;
   }
-  closeWindow();
+  quit();
 }
 
 // ---------- 编辑操作 ----------
@@ -452,12 +453,64 @@ onMounted(async () => {
       }
     }),
   );
+
+  // 窗口重获焦点时检查文件是否被外部改动，与记事本行为一致
+  unlisteners.push(
+    await getCurrentWindow().onFocusChanged(({ payload: focused }) => {
+      if (focused) void onWindowFocus();
+    }),
+  );
 });
 
 onBeforeUnmount(() => {
+  window.clearTimeout(focusTimer);
   for (const un of unlisteners) un();
   view?.destroy();
 });
+
+/**
+ * 外部改动检测。
+ *
+ * 记事本在窗口重新获得焦点时比对文件的修改时间，若已变化则询问是否重新加载。
+ * 这里采用同样的策略——比轮询省资源，也符合用户的心理模型。
+ */
+async function checkExternalChanges() {
+  for (const tab of docs.tabs.value) {
+    if (!tab.path) continue;
+
+    const current = await api.fileModifiedMs(tab.path);
+
+    if (current === null) {
+      // 文件已被删除或移动
+      if (!tab.reloadPending) {
+        tab.reloadPending = true;
+        window.alert(`${tab.name} 已被删除或移动。`);
+      }
+      continue;
+    }
+
+    if (tab.modifiedMs !== null && current !== tab.modifiedMs) {
+      const reload = window.confirm(
+        `${tab.name} 已被其他程序修改。\n\n是否要重新加载？`,
+      );
+      if (reload) {
+        docs.activate(tab.id);
+        await docs.reloadActive();
+      } else {
+        // 用户选择不重新加载：记下已看到的这一版，这样文件再次变动时仍会提示，
+        // 而不是因为记住「已拒绝」就永远不再询问。
+        tab.modifiedMs = current;
+      }
+    }
+  }
+}
+
+let focusTimer: number | undefined;
+async function onWindowFocus() {
+  // 焦点事件可能密集触发，去抖后再检查
+  window.clearTimeout(focusTimer);
+  focusTimer = window.setTimeout(() => void checkExternalChanges(), 300);
+}
 
 // 脏状态变化时通知后端
 watch(

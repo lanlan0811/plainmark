@@ -8,17 +8,15 @@
 //! 这里固定使用默认的 Wry 运行时，不做运行时泛型——桌面端应用没有多运行时需求，
 //! 具体类型也更不容易出编译问题。
 
-use tauri::menu::{CheckMenuItem, CheckMenuItemBuilder, MenuBuilder, MenuItemBuilder, SubmenuBuilder};
+use tauri::menu::{CheckMenuItemBuilder, MenuBuilder, MenuItemBuilder, SubmenuBuilder};
 use tauri::{AppHandle, Manager};
 
-/// 需要在运行期切换勾选状态的菜单项 id。
+/// 勾选类菜单项的 id。勾选状态由平台侧自动切换，前端只负责同步自身状态。
 pub const ID_WORD_WRAP: &str = "format.wordwrap";
 pub const ID_STATUS_BAR: &str = "view.statusbar";
 
-/// 构建并设置应用菜单，同时返回需要保留句柄的勾选项。
-pub fn build(
-    app: &AppHandle,
-) -> tauri::Result<(CheckMenuItem, CheckMenuItem)> {
+/// 构建并设置应用菜单。
+pub fn build(app: &AppHandle) -> tauri::Result<()> {
     // ---- 文件(F) ----
     let file = SubmenuBuilder::new(app, "文件(F)")
         .item(&MenuItemBuilder::with_id("file.new", "新建(N)").accelerator("Ctrl+N").build(app)?)
@@ -115,7 +113,7 @@ pub fn build(
 
     app.set_menu(menu)?;
 
-    Ok((word_wrap, status_bar))
+    Ok(())
 }
 
 /// 打开一个新窗口。label 依次为 main、main-2、main-3…

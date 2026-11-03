@@ -140,12 +140,19 @@ pub fn encode(text: &str, encoding: TextEncoding) -> Encoded {
 
         TextEncoding::Ansi => {
             let enc = ansi_encoding();
-            let (cow, _, had_unmappable) = enc.encode(text);
-            let unmappable = if had_unmappable {
-                collect_unmappable(text, enc)
+            let unmappable = collect_unmappable(text, enc);
+
+            // encoding_rs 会把无法表示的字符换成十进制数字字符引用（`&#nnnn;`），
+            // 而记事本写的是 `?`。为了让落盘字节与记事本一致，先自行把不可表示
+            // 的字符替换掉，再交给编码器——此时它已没有需要替换的内容。
+            let sanitized = if unmappable.is_empty() {
+                None
             } else {
-                Vec::new()
+                Some(replace_unmappable(text, enc))
             };
+            let to_encode = sanitized.as_deref().unwrap_or(text);
+
+            let (cow, _, _) = enc.encode(to_encode);
             return Encoded {
                 bytes: cow.into_owned(),
                 unmappable,
@@ -195,6 +202,24 @@ fn collect_unmappable(text: &str, enc: &'static Encoding) -> Vec<String> {
         }
     }
     seen
+}
+
+/// 把目标编码无法表示的字符换成 `?`。
+///
+/// 记事本在 ANSI 下保存含不可表示字符的文件时写入 `?`，而不是 encoding_rs 默认的
+/// 数字字符引用。这个函数让落盘结果与记事本一致。
+fn replace_unmappable(text: &str, enc: &'static Encoding) -> String {
+    text.chars()
+        .map(|ch| {
+            let s = ch.to_string();
+            let (_, _, unmappable) = enc.encode(&s);
+            if unmappable {
+                "?".to_string()
+            } else {
+                s
+            }
+        })
+        .collect()
 }
 
 #[cfg(test)]
@@ -310,6 +335,21 @@ mod tests {
         // emoji 无法用 GBK 或 1252 表示
         let e = encode("hi 😀", TextEncoding::Ansi);
         assert!(!e.unmappable.is_empty());
+    }
+
+    #[test]
+    fn ansi_replaces_unmappable_with_question_mark() {
+        // 记事本写 `?`，而不是 encoding_rs 默认的数字字符引用 `&#nnnn;`
+        let e = encode("hi 😀", TextEncoding::Ansi);
+        let as_text = String::from_utf8_lossy(&e.bytes);
+        assert!(
+            as_text.contains('?'),
+            "不可表示字符应替换为 ?，实际为：{as_text:?}"
+        );
+        assert!(
+            !as_text.contains("&#"),
+            "不应出现数字字符引用，实际为：{as_text:?}"
+        );
     }
 
     #[test]

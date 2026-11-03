@@ -49,6 +49,14 @@ export function openHelp(): Promise<void> {
   return invoke("open_help");
 }
 
+/**
+ * 取文件最后修改时间（毫秒时间戳），用于外部改动检测。
+ * 返回 null 表示文件已不存在。
+ */
+export function fileModifiedMs(path: string): Promise<number | null> {
+  return invoke<number | null>("file_modified_ms", { path });
+}
+
 /** 用系统对话框选择要打开的文件。返回 null 表示用户取消。 */
 export async function pickOpenPath(): Promise<string | null> {
   const selected = await open({

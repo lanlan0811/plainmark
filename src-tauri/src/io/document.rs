@@ -60,6 +60,11 @@ fn modified_ms_of(path: &Path) -> Option<u64> {
         .map(|d| d.as_millis() as u64)
 }
 
+/// 只取修改时间，不读文件内容。用于外部改动检测——大文件下避免整份读取。
+pub fn modified_ms(path: &Path) -> Option<u64> {
+    modified_ms_of(path)
+}
+
 /// 打开文件：读字节 → 检测编码 → 检测换行符 → 归一化换行。
 pub fn read(path: &Path) -> Result<DocumentInfo, String> {
     let bytes = std::fs::read(path).map_err(|e| format!("无法读取文件：{e}"))?;

@@ -70,16 +70,13 @@ pub fn run() {
             commands::open_help,
             commands::close_window,
             commands::set_title,
-            commands::path_exists,
+            commands::file_modified_ms,
             commands::exit_app,
         ])
         .setup(move |app| {
-            // 构建原生菜单，并保存需要动态改勾选的项
-            let (word_wrap_item, status_bar_item) = menu::build(app.handle())?;
+            menu::build(app.handle())?;
 
             let state = app.state::<AppState>();
-            *state.word_wrap_item.lock().unwrap() = Some(word_wrap_item);
-            *state.status_bar_item.lock().unwrap() = Some(status_bar_item);
             *state.startup_files.lock().unwrap() = startup_files.clone();
 
             Ok(())
