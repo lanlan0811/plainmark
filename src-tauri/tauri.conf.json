@@ -1,0 +1,79 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "plainmark",
+  "version": "0.1.0",
+  "identifier": "com.lanlan0811.plainmark",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "无标题 - plainmark",
+        "width": 1000,
+        "height": 700,
+        "minWidth": 400,
+        "minHeight": 300,
+        "resizable": true,
+        "center": true,
+        "dragDropEnabled": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["msi", "nsis"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "publisher": "lanlan0811",
+    "copyright": "Copyright © 2026 lanlan0811",
+    "category": "Productivity",
+    "shortDescription": "像记事本一样的 Markdown 编辑器",
+    "longDescription": "plainmark 是一个极简的 Markdown 桌面编辑器，用起来和 Windows 记事本一样简单。没有侧边栏、插件和账号，打开即写、存完即关。",
+    "fileAssociations": [
+      {
+        "ext": ["md"],
+        "name": "Markdown Document",
+        "description": "Markdown 文档",
+        "mimeType": "text/markdown",
+        "role": "Editor"
+      },
+      {
+        "ext": ["markdown"],
+        "name": "Markdown Document",
+        "description": "Markdown 文档",
+        "mimeType": "text/markdown",
+        "role": "Editor"
+      }
+    ],
+    "windows": {
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper",
+        "silent": true
+      },
+      "nsis": {
+        "installMode": "currentUser",
+        "installerHooks": "./windows/hooks.nsh",
+        "languages": ["SimpChinese", "English"],
+        "displayLanguageSelector": false
+      },
+      "wix": {
+        "language": "zh-CN",
+        "fragmentPaths": ["./windows/fragments/shellnew.wxs"],
+        "componentRefs": ["PlainmarkShellNew"]
+      }
+    }
+  }
+}
