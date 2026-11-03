@@ -1,0 +1,47 @@
+/* 全局基线样式。整体观感对齐 Windows 记事本：无圆角、无阴影、系统字体。 */
+
+:root {
+  /* 编辑器字号由「查看 → 缩放」驱动，改这一个变量即可 */
+  --pm-font-size: 11pt;
+  --pm-font-family: Consolas, "Courier New", ui-monospace, monospace;
+
+  /* 界面色板，贴近 Win10 记事本的浅色观感 */
+  --pm-bg: #ffffff;
+  --pm-fg: #1a1a1a;
+  --pm-border: #d4d4d4;
+  --pm-statusbar-bg: #f0f0f0;
+  --pm-tabbar-bg: #f0f0f0;
+  --pm-tab-active-bg: #ffffff;
+  --pm-tab-hover-bg: #e5e5e5;
+  --pm-selection: #cce4ff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: "Segoe UI", "Microsoft YaHei UI", system-ui, sans-serif;
+  font-size: 12px;
+  color: var(--pm-fg);
+  background: var(--pm-bg);
+  /* 桌面应用不应该有网页式的文本选中和橡皮筋滚动 */
+  -webkit-user-select: none;
+  user-select: none;
+  overflow: hidden;
+}
+
+/* 编辑区内的文本必须可以选中 */
+.cm-editor,
+.cm-editor * {
+  -webkit-user-select: text;
+  user-select: text;
+}
