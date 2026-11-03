@@ -57,6 +57,22 @@ export function fileModifiedMs(path: string): Promise<number | null> {
   return invoke<number | null>("file_modified_ms", { path });
 }
 
+/** 导入图片的结果。 */
+export interface ImportedAsset {
+  /** 可写进 Markdown 的相对路径，如 `assets/图片.png` */
+  relativePath: string;
+  absolutePath: string;
+  name: string;
+}
+
+/**
+ * 把图片复制到文档同目录的 `assets/` 下。
+ * 文档尚未保存时没有目录可放素材，需先「另存为」。
+ */
+export function importImage(docPath: string, sourcePath: string): Promise<ImportedAsset> {
+  return invoke<ImportedAsset>("import_image", { docPath, sourcePath });
+}
+
 /** 用系统对话框选择要打开的文件。返回 null 表示用户取消。 */
 export async function pickOpenPath(): Promise<string | null> {
   const selected = await open({

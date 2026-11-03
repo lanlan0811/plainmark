@@ -14,6 +14,8 @@ use tauri::{AppHandle, Manager};
 /// 勾选类菜单项的 id。勾选状态由平台侧自动切换，前端只负责同步自身状态。
 pub const ID_WORD_WRAP: &str = "format.wordwrap";
 pub const ID_STATUS_BAR: &str = "view.statusbar";
+pub const ID_PREVIEW: &str = "view.preview";
+pub const ID_ELEMENT_PANEL: &str = "view.element_panel";
 
 /// 构建并设置应用菜单。
 pub fn build(app: &AppHandle) -> tauri::Result<()> {
@@ -95,8 +97,17 @@ pub fn build(app: &AppHandle) -> tauri::Result<()> {
                 .build(app)?,
         )
         .build()?;
+    let preview = CheckMenuItemBuilder::with_id(ID_PREVIEW, "预览侧边栏(P)")
+        .checked(true)
+        .build(app)?;
+    let element_panel = CheckMenuItemBuilder::with_id(ID_ELEMENT_PANEL, "元素面板(E)")
+        .checked(true)
+        .build(app)?;
     let view = SubmenuBuilder::new(app, "查看(V)")
         .item(&zoom)
+        .separator()
+        .item(&preview)
+        .item(&element_panel)
         .item(&status_bar)
         .build()?;
 

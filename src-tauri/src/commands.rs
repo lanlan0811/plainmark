@@ -71,6 +71,14 @@ pub fn file_modified_ms(path: String) -> Option<u64> {
     io::modified_ms(Path::new(&path))
 }
 
+/// 把图片复制到文档同目录的 `assets/` 下，返回可写进 Markdown 的相对路径。
+///
+/// 文档尚未保存（没有路径）时无法确定素材放哪，由前端先走「另存为」。
+#[tauri::command]
+pub fn import_image(doc_path: String, source_path: String) -> Result<io::ImportedAsset, String> {
+    io::import_image(Path::new(&doc_path), Path::new(&source_path))
+}
+
 /// 打开帮助页面（项目主页）。
 #[tauri::command]
 pub fn open_help() -> Result<(), String> {

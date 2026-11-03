@@ -71,6 +71,7 @@ pub fn run() {
             commands::close_window,
             commands::set_title,
             commands::file_modified_ms,
+            commands::import_image,
             commands::exit_app,
         ])
         .setup(move |app| {

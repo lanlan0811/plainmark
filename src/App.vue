@@ -16,9 +16,12 @@ import TabBar from "./components/TabBar.vue";
 import StatusBar from "./components/StatusBar.vue";
 import ConfirmSaveModal from "./components/ConfirmSaveModal.vue";
 import FontDialog from "./components/FontDialog.vue";
+import PreviewPane from "./components/PreviewPane.vue";
+import ElementPanel from "./components/ElementPanel.vue";
 import { useDocuments } from "./composables/useDocuments";
 import { createEditorState } from "./editor/setup";
 import { getState } from "./editor/documents";
+import { extractBlocks } from "./preview/renderer";
 import { UNTITLED } from "./api";
 import * as api from "./api";
 import {
@@ -32,6 +35,7 @@ import {
 
 const docs = useDocuments();
 const editorHost = ref<HTMLElement | null>(null);
+const previewRef = ref<InstanceType<typeof PreviewPane> | null>(null);
 let view: EditorView | null = null;
 
 /** 光标位置，供状态栏显示 */
@@ -48,6 +52,83 @@ const fontDialogVisible = ref(false);
 
 /** 另存为时的编码选择（简化：用系统保存对话框拿到路径后，按当前编码写入） */
 const unlisteners: UnlistenFn[] = [];
+
+// ---------- 预览侧边栏 ----------
+
+/** 预览是否显示。宽度与开关状态持久化到 localStorage。 */
+const previewVisible = ref(readBool("plainmark.previewVisible", true));
+const previewWidth = ref(readNumber("plainmark.previewWidth", 420, 260, 900));
+const elementPanelVisible = ref(readBool("plainmark.elementPanelVisible", true));
+
+/** 当前文档源码，供预览渲染。由编辑器内容同步而来。 */
+const previewSource = ref("");
+
+function readBool(key: string, fallback: boolean): boolean {
+  try {
+    const v = localStorage.getItem(key);
+    return v === null ? fallback : v === "true";
+  } catch {
+    return fallback;
+  }
+}
+
+function readNumber(key: string, fallback: number, min: number, max: number): number {
+  try {
+    const v = Number(localStorage.getItem(key));
+    return Number.isFinite(v) && v >= min && v <= max ? v : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function persist() {
+  try {
+    localStorage.setItem("plainmark.previewVisible", String(previewVisible.value));
+    localStorage.setItem("plainmark.previewWidth", String(previewWidth.value));
+    localStorage.setItem(
+      "plainmark.elementPanelVisible",
+      String(elementPanelVisible.value),
+    );
+  } catch {
+    // localStorage 不可用时忽略，不影响功能
+  }
+}
+
+watch([previewVisible, previewWidth, elementPanelVisible], persist);
+
+/** 把编辑器内容同步到预览。 */
+function syncPreview() {
+  const v = view;
+  previewSource.value = v ? v.state.doc.toString() : "";
+}
+
+/** 分隔条拖拽调宽。 */
+let resizing = false;
+function onResizeStart(event: MouseEvent) {
+  event.preventDefault();
+  resizing = true;
+  document.body.style.cursor = "col-resize";
+  // 拖拽期间禁用文本选中，否则会选中编辑器内容
+  document.body.style.userSelect = "none";
+
+  window.addEventListener("mousemove", onResizeMove);
+  window.addEventListener("mouseup", onResizeEnd);
+}
+
+function onResizeMove(event: MouseEvent) {
+  if (!resizing) return;
+  // 预览在右侧，宽度 = 窗口右边缘 - 鼠标位置
+  const next = window.innerWidth - event.clientX;
+  previewWidth.value = Math.min(900, Math.max(260, next));
+}
+
+function onResizeEnd() {
+  resizing = false;
+  document.body.style.cursor = "";
+  document.body.style.userSelect = "";
+  window.removeEventListener("mousemove", onResizeMove);
+  window.removeEventListener("mouseup", onResizeEnd);
+}
 
 // ---------- 编辑器初始化 ----------
 
@@ -67,6 +148,7 @@ function buildEditor() {
       if (tr.docChanged) {
         docs.persistActiveState();
         docs.markDirty();
+        syncPreview();
       }
       updateCursor();
     },
@@ -74,6 +156,131 @@ function buildEditor() {
 
   docs.attachView(view);
   updateCursor();
+  syncPreview();
+}
+
+/** 把编辑器内容整体替换掉（拖拽重排、插入元素后使用）。 */
+function replaceEditorText(text: string) {
+  const v = view;
+  if (!v) return;
+  v.dispatch({
+    changes: { from: 0, to: v.state.doc.length, insert: text },
+  });
+  v.focus();
+}
+
+/** 在光标处插入 Markdown 片段。 */
+function insertAtCursor(markdown: string) {
+  const v = view;
+  if (!v) return;
+
+  const sel = v.state.selection.main;
+  // 块级元素前后留空行，避免与相邻内容粘连
+  const before = sel.from > 0 ? "\n\n" : "";
+  const after = "\n\n";
+  const insert = `${before}${markdown}${after}`;
+
+  v.dispatch({
+    changes: { from: sel.from, to: sel.to, insert },
+    selection: { anchor: sel.from + insert.length },
+  });
+  v.focus();
+}
+
+// ---------- 元素面板 → 预览的拖拽 ----------
+
+/** 元素面板拖拽的载荷，用于在放下时插入。 */
+let draggingElement: string | null = null;
+
+/** 在指定块之前插入；index 为 null 表示插到文档末尾。 */
+function insertElementAt(markdown: string, index: number | null) {
+  const v = view;
+  if (!v) return;
+
+  if (index === null) {
+    // 插到末尾
+    insertAtCursor(markdown);
+    return;
+  }
+
+  // 按源码位置插入到目标块之前
+  const blocks = previewBlocks();
+  const target = blocks[index];
+  if (!target) {
+    insertAtCursor(markdown);
+    return;
+  }
+
+  const insert = `${markdown}\n\n`;
+  v.dispatch({
+    changes: { from: target.start, to: target.start, insert },
+    selection: { anchor: target.start + insert.length },
+  });
+  v.focus();
+}
+
+/** 取预览中当前渲染出的块区间。 */
+function previewBlocks() {
+  const el = document.querySelector<HTMLElement>(".pm-preview-content");
+  if (!el) return [];
+  return extractBlocks(el);
+}
+
+function onElementDragStart(markdown: string) {
+  draggingElement = markdown;
+}
+
+function onElementDragMove(x: number, y: number) {
+  previewRef.value?.showInsertHint(x, y);
+}
+
+function onElementDragEnd(x: number, y: number) {
+  const markdown = draggingElement;
+  draggingElement = null;
+
+  const index = previewRef.value?.resolveInsertTarget(x, y) ?? null;
+  previewRef.value?.clearInsertHint();
+
+  if (markdown) insertElementAt(markdown, index);
+}
+
+function onElementDragCancel() {
+  draggingElement = null;
+  previewRef.value?.clearInsertHint();
+}
+
+// ---------- 本地文件拖入 ----------
+
+/**
+ * 导入拖入的图片：复制到 assets/ 并插入引用。
+ *
+ * 路径来自 Tauri 的原生拖放事件——Tauri 在 Windows 上接管了平台拖放，
+ * HTML5 的 drop 事件拿不到文件路径。
+ */
+async function importDroppedFiles(paths: string[]) {
+  const tab = docs.activeTab.value;
+  if (!tab) return;
+
+  if (!tab.path) {
+    window.alert("请先保存文档。图片会存放在文档同目录的 assets/ 下。");
+    return;
+  }
+
+  const images = paths.filter((p) => /\.(png|jpe?g|gif|webp|bmp|svg|avif|ico)$/i.test(p));
+  if (images.length === 0) {
+    window.alert("只支持图片文件（png / jpg / gif / webp / bmp / svg 等）。");
+    return;
+  }
+
+  for (const sourcePath of images) {
+    try {
+      const asset = await api.importImage(tab.path, sourcePath);
+      const alt = asset.name.replace(/\.[^.]+$/, "");
+      insertAtCursor(`![${alt}](${asset.relativePath})`);
+    } catch (e) {
+      window.alert(`导入失败：${e}`);
+    }
+  }
 }
 
 function updateCursor() {
@@ -359,6 +566,12 @@ async function handleMenu(event: MenuEvent) {
     case "view.statusbar":
       docs.statusBarVisible.value = !docs.statusBarVisible.value;
       break;
+    case "view.preview":
+      previewVisible.value = !previewVisible.value;
+      break;
+    case "view.element_panel":
+      elementPanelVisible.value = !elementPanelVisible.value;
+      break;
 
     case "help.view":
       await api.openHelp();
@@ -434,10 +647,19 @@ onMounted(async () => {
   // 拖放打开文件
   unlisteners.push(
     await getCurrentWindow().onDragDropEvent(async (e) => {
-      if (e.payload.type === "drop") {
-        for (const path of e.payload.paths) {
-          if (/\.(md|markdown|txt)$/i.test(path)) await docs.openPath(path);
-        }
+      if (e.payload.type !== "drop") return;
+
+      const paths = e.payload.paths;
+
+      // 图片 → 导入到 assets/ 并插入引用
+      if (paths.some((p) => /\.(png|jpe?g|gif|webp|bmp|svg|avif|ico)$/i.test(p))) {
+        await importDroppedFiles(paths);
+        return;
+      }
+
+      // 文档 → 打开成新标签
+      for (const path of paths) {
+        if (/\.(md|markdown|txt)$/i.test(path)) await docs.openPath(path);
       }
     }),
   );
@@ -529,7 +751,44 @@ watch(
       @new="doNewTab"
     />
 
-    <div ref="editorHost" class="editor-host"></div>
+    <!-- 工作区：编辑区 + 预览侧边栏 -->
+    <div class="workspace">
+      <div ref="editorHost" class="editor-host"></div>
+
+      <!-- 分隔条：拖动调宽 -->
+      <div
+        v-if="previewVisible"
+        class="splitter"
+        role="separator"
+        aria-orientation="vertical"
+        title="拖动调整宽度"
+        @mousedown="onResizeStart"
+      ></div>
+
+      <div
+        v-if="previewVisible"
+        class="preview-side"
+        :style="{ width: previewWidth + 'px' }"
+      >
+        <PreviewPane
+          ref="previewRef"
+          :source="previewSource"
+          :doc-path="docs.activeTab.value?.path ?? null"
+          @reorder="replaceEditorText"
+        />
+
+        <!-- 元素面板停靠在预览下方，方便把素材直接拖进预览 -->
+        <div v-if="elementPanelVisible" class="element-dock">
+          <ElementPanel
+            @insert="insertAtCursor"
+            @drag-start="onElementDragStart"
+            @drag-move="onElementDragMove"
+            @drag-end="onElementDragEnd"
+            @drag-cancel="onElementDragCancel"
+          />
+        </div>
+      </div>
+    </div>
 
     <StatusBar
       v-if="docs.statusBarVisible.value"
@@ -570,18 +829,70 @@ watch(
   flex-direction: column;
   height: 100vh;
   overflow: hidden;
-  /* 外圈浅色 chrome，编辑区是内嵌的白色面板——形成明确的层次感 */
+  /* 外圈浅色 chrome，编辑区与预览是内嵌的白色面板——形成明确的层次感 */
   background: var(--pm-chrome);
+}
+
+.workspace {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  padding: 6px 8px;
+  gap: 0;
 }
 
 .editor-host {
   flex: 1;
-  min-height: 0;
-  margin: 6px 8px;
+  min-width: 0;
   border: 1px solid var(--pm-border);
   border-radius: var(--pm-radius-md);
   background: var(--pm-bg);
   box-shadow: var(--pm-shadow-sm);
+  overflow: hidden;
+}
+
+/* 分隔条：细，但留出足够的抓取宽度 */
+.splitter {
+  flex: none;
+  width: 8px;
+  cursor: col-resize;
+  position: relative;
+}
+
+.splitter::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px;
+  height: 32px;
+  border-radius: 999px;
+  background: var(--pm-border-strong);
+  transition: background var(--pm-transition);
+}
+
+.splitter:hover::after {
+  background: var(--pm-brand);
+}
+
+.preview-side {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid var(--pm-border);
+  border-radius: var(--pm-radius-md);
+  background: var(--pm-bg);
+  box-shadow: var(--pm-shadow-sm);
+  overflow: hidden;
+}
+
+/* 元素面板停靠在预览下方，高度按内容，超出可滚动 */
+.element-dock {
+  flex: none;
+  max-height: 42%;
+  border-top: 1px solid var(--pm-border);
   overflow: hidden;
 }
 </style>
