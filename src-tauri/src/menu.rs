@@ -109,6 +109,7 @@ pub fn build(app: &AppHandle) -> tauri::Result<()> {
     // ---- 帮助(H) ----
     let help = SubmenuBuilder::new(app, "帮助(H)")
         .item(&MenuItemBuilder::with_id("help.view", "查看帮助(H)").build(app)?)
+        .item(&MenuItemBuilder::with_id("help.check_update", "检查更新(U)...").build(app)?)
         .separator()
         .item(&MenuItemBuilder::with_id("help.about", "关于 plainmark(A)").build(app)?)
         .build()?;

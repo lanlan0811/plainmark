@@ -17,7 +17,14 @@ import StatusBar from "./components/StatusBar.vue";
 import ConfirmSaveModal from "./components/ConfirmSaveModal.vue";
 import FontDialog from "./components/FontDialog.vue";
 import PreviewPane from "./components/PreviewPane.vue";
+import UpdateDialog from "./components/UpdateDialog.vue";
 import { useDocuments } from "./composables/useDocuments";
+import {
+  checkForUpdate,
+  downloadAndInstall,
+  dismissUpdate,
+  useUpdater,
+} from "./composables/useUpdater";
 import { createEditorState } from "./editor/setup";
 import { getState } from "./editor/documents";
 import { UNTITLED } from "./api";
@@ -46,6 +53,11 @@ const confirmName = ref(UNTITLED);
 
 /** 字体对话框 */
 const fontDialogVisible = ref(false);
+
+/** 自动更新状态 */
+const updater = useUpdater();
+/** 当前运行版本，供更新提示对比显示 */
+const appVersion = ref("");
 
 /** 另存为时的编码选择（简化：用系统保存对话框拿到路径后，按当前编码写入） */
 const unlisteners: UnlistenFn[] = [];
@@ -508,6 +520,14 @@ async function handleMenu(event: MenuEvent) {
     case "help.view":
       await api.openHelp();
       break;
+    case "help.check_update": {
+      // 手动检查：若没有新版本要给出明确反馈，不能像自动检查那样静默
+      const found = await checkForUpdate();
+      if (!found) {
+        window.alert(`plainmark ${appVersion.value || ""} 已是最新版本。`);
+      }
+      break;
+    }
     case "help.about":
       window.alert(
         `plainmark 0.1.0\n\n像记事本一样简单的 Markdown 编辑器\n\n` +
@@ -574,6 +594,11 @@ onMounted(async () => {
   // 这样用户看到的第一帧就是渲染好的界面，而不是 WebView 初始化期间的白屏。
   await showMainWindow();
 
+  // 静默检查更新。放在窗口显示之后，避免网络请求拖慢启动感知。
+  // 失败时保持沉默（离线、GitHub 不可达都属正常）。
+  void appVersion_init();
+  window.setTimeout(() => void checkForUpdate(), 1500);
+
   // 其余事件监听并行注册。它们是彼此独立的 IPC 往返，
   // 串行 await 会把启动时间累加，并行只需一轮往返的时间。
   const win = getCurrentWindow();
@@ -629,6 +654,16 @@ async function showMainWindow() {
     await win.setFocus();
   } catch {
     // 某些环境下（如无头测试）可能不可用，忽略即可
+  }
+}
+
+/** 取当前应用版本号，用于更新提示。 */
+async function appVersion_init() {
+  try {
+    const { getVersion } = await import("@tauri-apps/api/app");
+    appVersion.value = await getVersion();
+  } catch {
+    appVersion.value = "";
   }
 }
 
@@ -755,6 +790,17 @@ watch(
       :italic="docs.fontItalic.value"
       @apply="onFontApply"
       @cancel="fontDialogVisible = false"
+    />
+
+    <UpdateDialog
+      :phase="updater.phase.value"
+      :version="updater.version.value"
+      :current-version="appVersion"
+      :notes="updater.notes.value"
+      :progress="updater.progress.value"
+      :error-message="updater.errorMessage.value"
+      @confirm="downloadAndInstall"
+      @dismiss="dismissUpdate"
     />
   </div>
 </template>
