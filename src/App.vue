@@ -570,11 +570,18 @@ watch(
   flex-direction: column;
   height: 100vh;
   overflow: hidden;
+  /* 外圈浅色 chrome，编辑区是内嵌的白色面板——形成明确的层次感 */
+  background: var(--pm-chrome);
 }
 
 .editor-host {
   flex: 1;
   min-height: 0;
+  margin: 6px 8px;
+  border: 1px solid var(--pm-border);
+  border-radius: var(--pm-radius-md);
+  background: var(--pm-bg);
+  box-shadow: var(--pm-shadow-sm);
   overflow: hidden;
 }
 </style>

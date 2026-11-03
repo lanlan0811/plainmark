@@ -1,19 +1,58 @@
-/* 全局基线样式。整体观感对齐 Windows 记事本：无圆角、无阴影、系统字体。 */
+/**
+ * 设计令牌。
+ *
+ * 定位说明：plainmark 在**功能**上与 Windows 记事本对齐（菜单结构、快捷键、
+ * 状态栏信息），但**视觉**上是独立的一套设计语言。刻意不复刻记事本的
+ * 外观（纯灰 #f0f0f0 面板、全直角、22px 状态栏），原因有二：
+ *   1. 照搬他人产品的界面外观存在 trade dress 风险；
+ *   2. 应用应该有自己的品牌识别，而不是看起来像 Microsoft 的产品。
+ *
+ * 品牌色取自应用图标（靛蓝 #6366F1 → 紫罗兰 #8B5CF6）。
+ */
 
 :root {
-  /* 编辑器字号由「查看 → 缩放」驱动，改这一个变量即可 */
+  /* ---- 品牌色 ---- */
+  --pm-brand: #6366f1;
+  --pm-brand-strong: #4f46e5;
+  --pm-brand-soft: #eef0ff;
+  --pm-brand-border: #c7cbfa;
+
+  /* ---- 中性色 ----
+     统一带一点靛蓝倾向，避免纯灰的呆板，也让整体色调与品牌一致。 */
+  --pm-bg: #ffffff; /* 编辑区底色，保持纯白以确保文字清晰 */
+  --pm-chrome: #f8f8fc; /* 标签栏 / 状态栏底色 */
+  --pm-chrome-strong: #eef0f7; /* 悬停态 */
+  --pm-fg: #1f2033; /* 正文，带靛蓝倾向的深色 */
+  --pm-fg-muted: #6b7280; /* 次要文字 */
+  --pm-fg-subtle: #9ca3af; /* 更弱的提示文字 */
+  --pm-border: #e3e4ef;
+  --pm-border-strong: #d2d4e4;
+
+  /* ---- 语义色 ---- */
+  --pm-selection: #d9dcff;
+  --pm-caret: #4f46e5;
+
+  /* ---- 圆角 ----（记事本全直角，这里用圆角形成明确区隔）
+  --pm-radius-sm: 4px;
+  --pm-radius-md: 6px;
+  --pm-radius-lg: 10px;
+
+  /* ---- 阴影 ---- */
+  --pm-shadow-sm: 0 1px 2px rgba(31, 32, 51, 0.06);
+  --pm-shadow-md: 0 6px 20px rgba(31, 32, 51, 0.14);
+  --pm-shadow-lg: 0 16px 40px rgba(31, 32, 51, 0.2);
+
+  /* ---- 尺寸 ---- */
+  --pm-tabbar-height: 34px;
+  --pm-statusbar-height: 26px;
+
+  /* ---- 编辑区字体 ----
+     由「查看 → 缩放」与「格式 → 字体」驱动。 */
   --pm-font-size: 11pt;
   --pm-font-family: Consolas, "Courier New", ui-monospace, monospace;
 
-  /* 界面色板，贴近 Win10 记事本的浅色观感 */
-  --pm-bg: #ffffff;
-  --pm-fg: #1a1a1a;
-  --pm-border: #d4d4d4;
-  --pm-statusbar-bg: #f0f0f0;
-  --pm-tabbar-bg: #f0f0f0;
-  --pm-tab-active-bg: #ffffff;
-  --pm-tab-hover-bg: #e5e5e5;
-  --pm-selection: #cce4ff;
+  /* ---- 动效 ---- */
+  --pm-transition: 120ms ease;
 }
 
 * {
@@ -32,16 +71,56 @@ body {
   font-family: "Segoe UI", "Microsoft YaHei UI", system-ui, sans-serif;
   font-size: 12px;
   color: var(--pm-fg);
-  background: var(--pm-bg);
-  /* 桌面应用不应该有网页式的文本选中和橡皮筋滚动 */
+  background: var(--pm-chrome);
+  /* 桌面应用不应有网页式的文本选中与橡皮筋滚动 */
   -webkit-user-select: none;
   user-select: none;
   overflow: hidden;
 }
 
-/* 编辑区内的文本必须可以选中 */
+/* 编辑区内的文本必须可选中 */
 .cm-editor,
 .cm-editor * {
   -webkit-user-select: text;
   user-select: text;
+}
+
+/* ---- 自绘滚动条 ----
+   系统默认滚动条过于「Windows 原生」，换成与品牌一致的细样式。 */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--pm-border-strong);
+  border: 2px solid transparent;
+  background-clip: content-box;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--pm-fg-subtle);
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* ---- 统一按钮基线 ----
+   桌面应用的按钮用箭头光标；具体的可交互元素在各自组件里用 pointer 强调。 */
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* 键盘可达性：焦点环用品牌色，且只在键盘导航时出现 */
+:focus-visible {
+  outline: 2px solid var(--pm-brand);
+  outline-offset: 1px;
 }

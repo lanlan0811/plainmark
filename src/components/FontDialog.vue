@@ -2,8 +2,8 @@
 /**
  * 字体对话框。
  *
- * WebView2 没有原生字体选择器，所以自建一个简化版：字体族 + 字号。
- * 记事本的字体对话框还有字形（粗体/斜体），这里一并提供。
+ * WebView2 没有原生字体选择器，所以自建。功能与记事本的字体设置等价
+ * （字体族 / 字形 / 字号 + 预览），视觉沿用本应用的圆角卡片风格。
  */
 import { ref, watch } from "vue";
 
@@ -61,57 +61,62 @@ function apply() {
 </script>
 
 <template>
-  <div v-if="visible" class="overlay">
-    <div class="dialog" role="dialog" aria-modal="true">
-      <p class="title">字体</p>
+  <Transition name="pm-fade">
+    <div v-if="visible" class="overlay">
+      <div class="dialog" role="dialog" aria-modal="true">
+        <p class="title">字体</p>
 
-      <div class="row">
-        <label for="font-family">字体(F):</label>
-        <select id="font-family" v-model="localFamily">
-          <option v-for="f in FAMILIES" :key="f" :value="f">{{ f }}</option>
-        </select>
-      </div>
+        <div class="row">
+          <label for="font-family">字体</label>
+          <select id="font-family" v-model="localFamily">
+            <option v-for="f in FAMILIES" :key="f" :value="f">{{ f }}</option>
+          </select>
+        </div>
 
-      <div class="row">
-        <label for="font-style">字形(Y):</label>
-        <select
-          id="font-style"
-          :value="localBold ? (localItalic ? 'bi' : 'b') : localItalic ? 'i' : 'r'"
-          @change="
-            (e) => {
-              const v = (e.target as HTMLSelectElement).value;
-              localBold = v === 'b' || v === 'bi';
-              localItalic = v === 'i' || v === 'bi';
-            }
-          "
+        <div class="row">
+          <label for="font-style">字形</label>
+          <select
+            id="font-style"
+            :value="localBold ? (localItalic ? 'bi' : 'b') : localItalic ? 'i' : 'r'"
+            @change="
+              (e) => {
+                const v = (e.target as HTMLSelectElement).value;
+                localBold = v === 'b' || v === 'bi';
+                localItalic = v === 'i' || v === 'bi';
+              }
+            "
+          >
+            <option value="r">常规</option>
+            <option value="i">斜体</option>
+            <option value="b">粗体</option>
+            <option value="bi">粗斜体</option>
+          </select>
+        </div>
+
+        <div class="row">
+          <label for="font-size">字号</label>
+          <input id="font-size" v-model.number="localSize" type="number" min="6" max="72" step="1" />
+        </div>
+
+        <div
+          class="preview"
+          :style="{
+            fontFamily: localFamily,
+            fontSize: `${localSize}pt`,
+            fontWeight: localBold ? 'bold' : 'normal',
+            fontStyle: localItalic ? 'italic' : 'normal',
+          }"
         >
-          <option value="r">常规</option>
-          <option value="i">斜体</option>
-          <option value="b">粗体</option>
-          <option value="bi">粗斜体</option>
-        </select>
-      </div>
+          AaBbYyZz 示例文本
+        </div>
 
-      <div class="row">
-        <label for="font-size">大小(S):</label>
-        <input id="font-size" v-model.number="localSize" type="number" min="6" max="72" step="1" />
-      </div>
-
-      <div class="preview" :style="{
-        fontFamily: localFamily,
-        fontSize: `${localSize}pt`,
-        fontWeight: localBold ? 'bold' : 'normal',
-        fontStyle: localItalic ? 'italic' : 'normal',
-      }">
-        AaBbYyZz 示例文本
-      </div>
-
-      <div class="buttons">
-        <button type="button" class="btn" @click="apply">确定</button>
-        <button type="button" class="btn" @click="emit('cancel')">取消</button>
+        <div class="buttons">
+          <button type="button" class="btn btn-ghost" @click="emit('cancel')">取消</button>
+          <button type="button" class="btn btn-primary" @click="apply">确定</button>
+        </div>
       </div>
     </div>
-  </div>
+  </Transition>
 </template>
 
 <style scoped>
@@ -121,76 +126,131 @@ function apply() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.12);
+  background: rgba(31, 32, 51, 0.28);
+  backdrop-filter: blur(2px);
   z-index: 100;
 }
 
 .dialog {
-  width: 400px;
-  padding: 16px 18px 12px;
-  background: #f0f0f0;
-  border: 1px solid #b0b0b0;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
-  font-size: 12px;
+  width: 420px;
+  max-width: calc(100vw - 48px);
+  padding: 20px 20px 16px;
+  border: 1px solid var(--pm-border);
+  border-radius: var(--pm-radius-lg);
+  background: var(--pm-bg);
+  box-shadow: var(--pm-shadow-lg);
 }
 
 .title {
-  margin: 0 0 14px;
+  margin: 0 0 16px;
+  font-size: 13px;
   font-weight: 600;
+  color: var(--pm-fg);
 }
 
 .row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   margin-bottom: 10px;
 }
 
 .row label {
-  width: 70px;
   flex: none;
+  width: 48px;
+  color: var(--pm-fg-muted);
+  font-size: 12px;
 }
 
 .row select,
 .row input {
   flex: 1;
-  height: 24px;
-  padding: 0 6px;
-  border: 1px solid #adadad;
-  background: #fff;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid var(--pm-border-strong);
+  border-radius: var(--pm-radius-md);
+  background: var(--pm-bg);
+  color: var(--pm-fg);
   font-family: inherit;
   font-size: 12px;
+  transition: border-color var(--pm-transition);
+}
+
+.row select:focus,
+.row input:focus {
+  border-color: var(--pm-brand);
+  outline: none;
 }
 
 .preview {
-  height: 68px;
-  margin: 14px 0;
-  padding: 8px;
-  border: 1px solid #adadad;
-  background: #fff;
+  height: 76px;
+  margin: 16px 0 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--pm-border);
+  border-radius: var(--pm-radius-md);
+  background: var(--pm-chrome);
   overflow: hidden;
-  line-height: 1.4;
+  line-height: 1.5;
+  color: var(--pm-fg);
 }
 
 .buttons {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
-  margin-top: 6px;
+  margin-top: 16px;
 }
 
 .btn {
   min-width: 76px;
-  padding: 4px 12px;
-  border: 1px solid #adadad;
-  background: #e1e1e1;
-  font-family: inherit;
+  height: 30px;
+  padding: 0 14px;
+  border-radius: var(--pm-radius-md);
   font-size: 12px;
-  cursor: default;
+  transition:
+    background var(--pm-transition),
+    border-color var(--pm-transition);
 }
 
-.btn:hover {
-  background: #e5f1fb;
-  border-color: #0078d7;
+.btn-ghost {
+  border: 1px solid var(--pm-border-strong);
+  background: var(--pm-bg);
+  color: var(--pm-fg);
+}
+
+.btn-ghost:hover {
+  background: var(--pm-chrome);
+  border-color: var(--pm-fg-subtle);
+}
+
+.btn-primary {
+  border: 1px solid var(--pm-brand-strong);
+  background: var(--pm-brand);
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.btn-primary:hover {
+  background: var(--pm-brand-strong);
+}
+
+.pm-fade-enter-active,
+.pm-fade-leave-active {
+  transition: opacity 140ms ease;
+}
+
+.pm-fade-enter-active .dialog,
+.pm-fade-leave-active .dialog {
+  transition: transform 140ms ease;
+}
+
+.pm-fade-enter-from,
+.pm-fade-leave-to {
+  opacity: 0;
+}
+
+.pm-fade-enter-from .dialog,
+.pm-fade-leave-to .dialog {
+  transform: translateY(-6px) scale(0.98);
 }
 </style>
