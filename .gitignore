@@ -1,0 +1,64 @@
+# ===== Rust / Cargo =====
+/target/
+**/*.rs.bk
+*.pdb
+*.exe
+*.dll
+*.lib
+*.so
+*.dylib
+
+# Cargo.lock —— 应用(二进制)项目建议提交，此处按需保留
+# Cargo.lock
+
+# ===== 构建产物 / 打包 =====
+/dist/
+/build/
+/out/
+/release/
+/pkg/
+*.msi
+*.appx
+*.appxbundle
+*.msix
+
+# Tauri (若使用)
+/src-tauri/target/
+/src-tauri/gen/schemas/
+
+# ===== 依赖与缓存 =====
+node_modules/
+.cargo/
+.rustc/
+*.rlib
+*.rmeta
+
+# ===== 编辑器 / IDE =====
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+*.iml
+
+# ===== 系统文件 =====
+.DS_Store
+Thumbs.db
+desktop.ini
+ehthumbs.db
+
+# ===== 环境变量 / 密钥 =====
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# ===== 日志 / 临时文件 =====
+*.log
+logs/
+tmp/
+temp/
+*.tmp
+*.bak
