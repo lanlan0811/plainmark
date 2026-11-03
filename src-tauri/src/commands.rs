@@ -103,6 +103,13 @@ pub fn open_help() -> Result<(), String> {
     Ok(())
 }
 
+/// 打开开源协议页面。
+#[tauri::command]
+pub fn open_license() -> Result<(), String> {
+    open_url("https://github.com/lanlan0811/plainmark/blob/main/LICENSE");
+    Ok(())
+}
+
 /// 用系统默认浏览器打开链接。
 #[cfg(windows)]
 fn open_url(url: &str) {

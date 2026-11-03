@@ -1,6 +1,6 @@
 [package]
 name = "plainmark"
-version = "0.1.6"
+version = "0.1.7"
 description = "像记事本一样简单的 Markdown 编辑器"
 authors = ["lanlan0811"]
 license = "MIT"
@@ -22,6 +22,8 @@ tauri-plugin-single-instance = "2"
 tauri-plugin-updater = "2"
 # 安装更新后需重启应用，process 插件提供 relaunch
 tauri-plugin-process = "2"
+# 关于对话框需要展示系统信息（OS 版本、架构）
+tauri-plugin-os = "2"
 # 记住窗口尺寸与位置
 tauri-plugin-window-state = "2"
 serde = { version = "1", features = ["derive"] }

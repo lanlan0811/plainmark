@@ -80,6 +80,11 @@ export function openHelp(): Promise<void> {
   return invoke("open_help");
 }
 
+/** 用系统默认浏览器打开开源协议页面。 */
+export function openLicense(): Promise<void> {
+  return invoke("open_license");
+}
+
 /**
  * 上报启动里程碑，用于定位启动耗时。
  *

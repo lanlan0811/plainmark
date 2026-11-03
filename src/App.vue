@@ -19,6 +19,7 @@ import FontDialog from "./components/FontDialog.vue";
 import PreviewPane from "./components/PreviewPane.vue";
 import UpdateDialog from "./components/UpdateDialog.vue";
 import PromptDialog from "./components/PromptDialog.vue";
+import AboutDialog from "./components/AboutDialog.vue";
 import { useDocuments } from "./composables/useDocuments";
 import {
   checkForUpdate,
@@ -54,6 +55,9 @@ const confirmName = ref(UNTITLED);
 
 /** 字体对话框 */
 const fontDialogVisible = ref(false);
+
+/** 关于对话框 */
+const aboutVisible = ref(false);
 
 /** 「转到行」对话框 */
 const gotoVisible = ref(false);
@@ -542,12 +546,7 @@ async function handleMenu(event: MenuEvent) {
       break;
     }
     case "help.about":
-      // 版本号取实际运行值，不硬编码——否则每次发版都要记得改这里
-      await api.alert(
-        `plainmark ${appVersion.value || ""}\n\n像记事本一样简单的 Markdown 编辑器\n\n` +
-          `MIT License © 2026 lanlan0811`,
-        "关于 plainmark",
-      );
+      aboutVisible.value = true;
       break;
     default:
       break;
@@ -811,6 +810,14 @@ watch(
       :italic="docs.fontItalic.value"
       @apply="onFontApply"
       @cancel="fontDialogVisible = false"
+    />
+
+    <AboutDialog
+      :visible="aboutVisible"
+      :app-version="appVersion"
+      @close="aboutVisible = false"
+      @open-help="api.openHelp()"
+      @open-license="api.openLicense()"
     />
 
     <PromptDialog

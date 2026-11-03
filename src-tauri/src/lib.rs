@@ -92,6 +92,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_os::init())
         .plugin(
             // 记住窗口尺寸与位置，下次启动恢复。
             //
@@ -116,6 +117,7 @@ pub fn run() {
             commands::get_startup_files,
             commands::set_window_dirty,
             commands::open_help,
+            commands::open_license,
             commands::close_window,
             commands::set_title,
             commands::file_modified_ms,
