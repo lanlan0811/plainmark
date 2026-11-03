@@ -35,6 +35,8 @@ custom-protocol = ["tauri/custom-protocol"]
 [profile.release]
 codegen-units = 1
 lto = true
-opt-level = "s"
+# 按速度优化而非体积。's' 会把二进制压得更小，但启动时的解压与分支预测
+# 代价更高；实测启动耗时比体积更值得优化。
+opt-level = 3
 panic = "abort"
 strip = true

@@ -48,6 +48,23 @@ pub fn set_title(window: Window, title: String) -> Result<(), String> {
     window.set_title(&title).map_err(|e| e.to_string())
 }
 
+/// 记录前端上报的启动里程碑，输出到 stderr。
+///
+/// 用于定位启动耗时分布：Rust 侧无法感知 WebView 内部的加载进度，
+/// 只能由前端在关键节点主动上报。日志仅在开启 `PLAINMARK_STARTUP_LOG`
+/// 环境变量时输出，平时不产生噪音。
+#[tauri::command]
+pub fn report_startup_milestone(name: String) {
+    if std::env::var_os("PLAINMARK_STARTUP_LOG").is_none() {
+        return;
+    }
+    eprintln!(
+        "[startup] {:>6} ms  {}",
+        crate::ms_since_start(),
+        name
+    );
+}
+
 /// 关闭当前窗口。
 #[tauri::command]
 pub fn close_window(window: Window) -> Result<(), String> {

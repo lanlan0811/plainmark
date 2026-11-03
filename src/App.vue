@@ -593,11 +593,15 @@ function onFontApply(value: {
 // ---------- 生命周期 ----------
 
 onMounted(async () => {
+  api.reportStartupMilestone("Vue 挂载开始");
+
   await nextTick();
 
   // 先建好编辑器：这一步决定首屏内容，必须在显示窗口之前完成
   docs.newTab();
   buildEditor();
+
+  api.reportStartupMilestone("编辑器就绪");
 
   // 启动时命令行传入的文件（先取，因为它决定首个标签的内容）
   const startup = await api.getStartupFiles();
@@ -608,6 +612,7 @@ onMounted(async () => {
   // 内容就绪，显示窗口。窗口在 tauri.conf.json 里配置为 visible: false，
   // 这样用户看到的第一帧就是渲染好的界面，而不是 WebView 初始化期间的白屏。
   await showMainWindow();
+  api.reportStartupMilestone("窗口已显示");
 
   // 静默检查更新。放在窗口显示之后，避免网络请求拖慢启动感知。
   // 失败时保持沉默（离线、GitHub 不可达都属正常）。

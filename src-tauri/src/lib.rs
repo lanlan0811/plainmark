@@ -6,6 +6,7 @@ mod menu;
 mod state;
 
 use std::path::PathBuf;
+use std::time::Instant;
 
 use tauri::{Emitter, Manager};
 
@@ -13,6 +14,30 @@ use state::AppState;
 
 /// 从前端接收菜单事件时使用的通道名。
 const MENU_EVENT: &str = "plainmark://menu";
+
+/// 进程启动时刻，用于统计启动耗时。
+///
+/// 用 OnceLock 而非 lazy_static：只在首次访问时初始化，且无额外依赖。
+/// 记录的是「本函数被调用」的时刻，即 Rust 侧最早可测量的起点。
+static PROCESS_START: std::sync::OnceLock<Instant> = std::sync::OnceLock::new();
+
+/// 返回自进程启动以来的毫秒数。
+pub fn ms_since_start() -> u64 {
+    PROCESS_START
+        .get_or_init(Instant::now)
+        .elapsed()
+        .as_millis() as u64
+}
+
+/// 输出启动阶段的耗时。
+///
+/// 仅在设置 `PLAINMARK_STARTUP_LOG` 环境变量时输出，平时不产生噪音。
+/// 用法：`set PLAINMARK_STARTUP_LOG=1 && plainmark.exe`
+fn startup_log(stage: &str) {
+    if std::env::var_os("PLAINMARK_STARTUP_LOG").is_some() {
+        eprintln!("[startup] {:>6} ms  {}", ms_since_start(), stage);
+    }
+}
 
 /// 从命令行参数里挑出看起来是文件路径的项。
 ///
@@ -29,6 +54,10 @@ fn file_args() -> Vec<String> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // 记录起点。这是 Rust 侧最早能取到的时刻。
+    PROCESS_START.get_or_init(Instant::now);
+    startup_log("run() 进入（Rust 侧起点）");
+
     // 启动时先把命令行里的文件记下来，供前端初始化时取用
     let startup_files = file_args();
 
@@ -92,9 +121,13 @@ pub fn run() {
             commands::file_modified_ms,
             commands::import_image,
             commands::exit_app,
+            commands::report_startup_milestone,
         ])
         .setup(move |app| {
+            startup_log("setup 开始");
+
             menu::build(app.handle())?;
+            startup_log("菜单构建完成");
 
             let state = app.state::<AppState>();
             *state.startup_files.lock().unwrap() = startup_files.clone();
@@ -104,7 +137,17 @@ pub fn run() {
             // 配置里的 900×620 在小屏（如 1366×768）上会占掉八成高度，观感上
             // 「一打开就拉得特别高」。这里按工作区的比例上限收敛一次。
             // 若窗口状态插件已恢复过用户尺寸，则跳过——尊重用户的选择。
-            clamp_window_to_screen(app.handle());
+            //
+            // 放到独立线程执行：其中的 current_monitor() / set_size() 都是同步
+            // IPC 往返，在主线程里做会直接拖慢窗口出现的时间。窗口此时尚不可见，
+            // 异步调整尺寸不会被用户察觉。
+            let clamp_handle = app.handle().clone();
+            std::thread::spawn(move || {
+                let h = clamp_handle.clone();
+                let _ = clamp_handle.run_on_main_thread(move || {
+                    clamp_window_to_screen(&h);
+                });
+            });
 
             // 主窗口初始为隐藏（见 tauri.conf.json 的 visible: false），由前端在
             // 首屏渲染完成后调用 show() 显示，以避免暴露 WebView 初始化期间的白屏。

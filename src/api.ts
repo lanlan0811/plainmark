@@ -81,6 +81,17 @@ export function openHelp(): Promise<void> {
 }
 
 /**
+ * 上报启动里程碑，用于定位启动耗时。
+ *
+ * Rust 侧无法感知 WebView 内部的加载进度，只能由前端在关键节点主动上报。
+ * 仅在设置 `PLAINMARK_STARTUP_LOG` 环境变量时才会真正输出日志。
+ */
+export function reportStartupMilestone(name: string): void {
+  // 不 await：埋点不应影响启动路径
+  void invoke("report_startup_milestone", { name }).catch(() => {});
+}
+
+/**
  * 取文件最后修改时间（毫秒时间戳），用于外部改动检测。
  * 返回 null 表示文件已不存在。
  */
