@@ -17,17 +17,19 @@ Most Markdown editors keep growing into IDEs. plainmark cares about one thing on
 
 ## Status
 
-> **Early development.** No releases yet.
+> **In development.** No stable release yet.
 
-The repository currently contains the license, CI/CD configuration, and project documentation. Application code is under development. Download links will be added here once the first version ships.
+The application itself is implemented. Download links will be added here once the first version ships.
 
-## Planned Features
+## Features
 
-- **Minimal UI**: single window, no sidebar, no tabs, no stacked toolbars
-- **Markdown syntax highlighting**: keep the source readable while writing
+- **Notepad-like**: native menu bar (File / Edit / Format / View / Help) and status bar, matching Windows Notepad's layout and shortcuts
+- **Markdown syntax highlighting**: colors the source only — no preview pane, the editing surface stays plain text
+- **Tabs**: multiple documents in one window, each with its own undo history
+- **Lossless encodings**: ANSI / UTF-8 / UTF-8 BOM / UTF-16 LE / UTF-16 BE are detected on open and written back unchanged
+- **Switchable line endings**: Windows (CRLF) / Unix (LF) / Macintosh (CR) from the status bar
 - **Local first**: files stay on your machine — no network, no uploads
-- **Lightweight and fast**: quick startup, low memory footprint
-- **Works out of the box**: nothing to configure after install
+- **Right-click New**: after install, create a Markdown document straight from Explorer's New menu
 
 ## Tech Stack
 
