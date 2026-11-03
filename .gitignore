@@ -55,6 +55,9 @@ ehthumbs.db
 *.pem
 *.key
 
+# ===== 本地规则文档（不提交） =====
+/AGENTS.md
+
 # ===== 日志 / 临时文件 =====
 *.log
 logs/
