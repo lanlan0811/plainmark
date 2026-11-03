@@ -1,0 +1,47 @@
+# 默认：自动检测文本文件，统一以 LF 存入仓库
+* text=auto eol=lf
+
+# Windows 脚本需要 CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# 二进制文件，不做换行符转换
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.icns binary
+*.webp binary
+*.svg text
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.pdf binary
+
+# Rust
+*.rs text
+Cargo.lock text
+*.pdb binary
+
+# 前端
+*.js text
+*.ts text
+*.vue text
+*.json text
+*.css text
+*.html text
+*.md text
+
+# 安装包等构建产物
+*.msi binary
+*.exe binary
+*.dll binary
+*.lib binary
+
+# 语言统计时排除，避免生成物污染 GitHub 语言占比
+src-tauri/target/** linguist-vendored
+dist/** linguist-generated
+package-lock.json linguist-generated -diff

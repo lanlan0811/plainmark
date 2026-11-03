@@ -74,11 +74,16 @@ git tag v0.1.0
 git push origin v0.1.0
 ```
 
-构建与打包全绿后，会自动创建 GitHub Release 并附上安装包。详细规则见 `AGENTS.md`。
+构建与打包全绿后，会自动创建 GitHub Release 并附上安装包。详细规则见 [CONTRIBUTING.md](CONTRIBUTING.md#发布规则)。
 
 ## 贡献
 
 项目处于早期阶段，接口与结构可能频繁变动。欢迎通过 Issue 提出建议或报告问题。
+
+- [贡献指南](CONTRIBUTING.md) —— 开发环境、提交流程、发布规则
+- [行为准则](CODE_OF_CONDUCT.md)
+- [安全策略](SECURITY.md) —— 如何私下报告漏洞
+- [更新日志](CHANGELOG.md)
 
 ## 开源协议
 

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 安全漏洞
+    url: https://github.com/lanlan0811/plainmark/security/advisories/new
+    about: 请勿公开报告安全漏洞，改用私密渠道
+  - name: 使用问题与讨论
+    url: https://github.com/lanlan0811/plainmark/discussions
+    about: 提问、交流使用心得

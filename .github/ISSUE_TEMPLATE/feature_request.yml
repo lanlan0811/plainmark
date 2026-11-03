@@ -1,0 +1,54 @@
+name: 功能建议
+description: 提出一个新功能或改进建议
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢建议。提交前请先确认它符合 plainmark 的定位：**像记事本一样的 Markdown 编辑器**。
+
+        侧边栏、插件系统、账号体系、云同步等重型特性通常不符合本项目的取舍原则。
+
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: 提交前确认
+      options:
+        - label: 我已搜索过现有 Issue，确认这不是重复建议
+          required: true
+        - label: 该建议契合「极简、像记事本」的项目定位
+          required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: 要解决的问题
+      description: 这个建议解决了什么痛点？请描述场景而非直接给出方案
+      placeholder: 例如：我在写长文档时，需要频繁……很麻烦
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: 期望的方案
+      description: 你希望 plainmark 怎么做
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 考虑过的替代方案
+      description: 你试过哪些其他做法？为什么不够用
+    validations:
+      required: false
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: 补充信息
+      description: 参考截图、同类软件的做法等
+    validations:
+      required: false

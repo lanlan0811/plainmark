@@ -1,0 +1,36 @@
+# https://editorconfig.org
+root = true
+
+# 所有文件默认配置
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+# Rust
+[*.rs]
+indent_size = 4
+
+# TOML
+[*.toml]
+indent_size = 4
+
+# 前端
+[*.{js,ts,vue,json,css,html}]
+indent_size = 2
+
+# 文档：保留行尾空格（Markdown 中两个空格表示换行）
+[*.md]
+trim_trailing_whitespace = false
+
+# Windows 脚本
+[*.{bat,cmd,ps1}]
+end_of_line = crlf
+
+# 构建产物与依赖，不做检查
+[{target,dist,node_modules}/**]
+insert_final_newline = false
+trim_trailing_whitespace = false
