@@ -14,8 +14,27 @@
  *   - 事件用委托挂在容器上，不给每个块单独绑定。
  */
 import { ref, watch, nextTick } from "vue";
-import { renderMarkdown, extractBlocks, moveBlockTo, type SourceBlock } from "../preview/renderer";
+import type { SourceBlock } from "../preview/renderer";
 import { startDrag, isPointInside } from "../composables/usePointerDrag";
+
+/**
+ * 渲染器按需加载。
+ *
+ * markdown-it 与 DOMPurify 合计约占首屏 JS 的 12%，而预览并非启动必需——
+ * 首次渲染时才 import，让编辑器能更早出现。
+ */
+type Renderer = typeof import("../preview/renderer");
+let rendererModule: Renderer | null = null;
+let rendererLoading: Promise<Renderer> | null = null;
+
+function loadRenderer(): Promise<Renderer> {
+  if (rendererModule) return Promise.resolve(rendererModule);
+  rendererLoading ??= import("../preview/renderer").then((m) => {
+    rendererModule = m;
+    return m;
+  });
+  return rendererLoading;
+}
 
 const props = defineProps<{
   /** 当前文档源码 */
@@ -53,6 +72,7 @@ function scheduleRender() {
   window.clearTimeout(renderTimer);
   renderTimer = window.setTimeout(async () => {
     try {
+      const { renderMarkdown } = await loadRenderer();
       html.value = renderMarkdown(props.source).html;
       error.value = null;
     } catch (e) {
@@ -67,9 +87,10 @@ function scheduleRender() {
 watch(() => props.source, scheduleRender, { immediate: true });
 watch(() => props.docPath, scheduleRender);
 
-/** 取当前渲染出的块区间。 */
+/** 取当前渲染出的块区间。渲染器已加载时才有意义。 */
 function currentBlocks(): SourceBlock[] {
-  return host.value ? extractBlocks(host.value) : [];
+  if (!host.value || !rendererModule) return [];
+  return rendererModule.extractBlocks(host.value);
 }
 
 /** 所有块的 DOM 节点，按文档顺序。 */
@@ -137,8 +158,8 @@ function onPointerDown(event: PointerEvent) {
     const to = blockIndexAt(x, y);
     const blocks = currentBlocks();
 
-    if (to >= 0 && to !== from && from < blocks.length && to < blocks.length) {
-      const next = moveBlockTo(props.source, blocks, from, to);
+    if (to >= 0 && to !== from && from < blocks.length && to < blocks.length && rendererModule) {
+      const next = rendererModule.moveBlockTo(props.source, blocks, from, to);
       if (next !== props.source) emit("reorder", next);
     }
     clearMarks();

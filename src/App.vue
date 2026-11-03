@@ -559,28 +559,35 @@ function onFontApply(value: {
 
 onMounted(async () => {
   await nextTick();
+
+  // 先建好编辑器：这一步决定首屏内容，必须在显示窗口之前完成
   docs.newTab();
   buildEditor();
 
-  // 菜单事件
-  unlisteners.push(await listen<MenuEvent>("plainmark://menu", (e) => void handleMenu(e.payload)));
+  // 启动时命令行传入的文件（先取，因为它决定首个标签的内容）
+  const startup = await api.getStartupFiles();
+  for (const path of startup) {
+    await docs.openPath(path);
+  }
 
-  // 第二次启动时由单实例回调送来的文件
-  unlisteners.push(
-    await listen<string[]>("plainmark://open-files", async (e) => {
+  // 内容就绪，显示窗口。窗口在 tauri.conf.json 里配置为 visible: false，
+  // 这样用户看到的第一帧就是渲染好的界面，而不是 WebView 初始化期间的白屏。
+  await showMainWindow();
+
+  // 其余事件监听并行注册。它们是彼此独立的 IPC 往返，
+  // 串行 await 会把启动时间累加，并行只需一轮往返的时间。
+  const win = getCurrentWindow();
+  const registered = await Promise.all([
+    listen<MenuEvent>("plainmark://menu", (e) => void handleMenu(e.payload)),
+
+    // 第二次启动时由单实例回调送来的文件
+    listen<string[]>("plainmark://open-files", async (e) => {
       for (const path of e.payload) await docs.openPath(path);
     }),
-  );
 
-  // 启动时命令行传入的文件
-  const startup = await api.getStartupFiles();
-  for (const path of startup) await docs.openPath(path);
-
-  // 拖放打开文件
-  unlisteners.push(
-    await getCurrentWindow().onDragDropEvent(async (e) => {
+    // 拖放打开文件
+    win.onDragDropEvent(async (e) => {
       if (e.payload.type !== "drop") return;
-
       const paths = e.payload.paths;
 
       // 图片 → 导入到 assets/ 并插入引用
@@ -594,11 +601,9 @@ onMounted(async () => {
         if (/\.(md|markdown|txt)$/i.test(path)) await docs.openPath(path);
       }
     }),
-  );
 
-  // 关闭窗口前拦截未保存内容
-  unlisteners.push(
-    await getCurrentWindow().onCloseRequested(async (e) => {
+    // 关闭窗口前拦截未保存内容
+    win.onCloseRequested(async (e) => {
       const dirty = docs.tabs.value.find((t) => t.dirty);
       if (dirty) {
         e.preventDefault();
@@ -606,15 +611,26 @@ onMounted(async () => {
         guardUnsaved(() => void api.closeWindow());
       }
     }),
-  );
 
-  // 窗口重获焦点时检查文件是否被外部改动，与记事本行为一致
-  unlisteners.push(
-    await getCurrentWindow().onFocusChanged(({ payload: focused }) => {
+    // 窗口重获焦点时检查文件是否被外部改动，与记事本行为一致
+    win.onFocusChanged(({ payload: focused }) => {
       if (focused) void onWindowFocus();
     }),
-  );
+  ]);
+
+  unlisteners.push(...registered);
 });
+
+/** 显示主窗口。窗口初始为隐藏，避免暴露 WebView 初始化期间的白屏。 */
+async function showMainWindow() {
+  try {
+    const win = getCurrentWindow();
+    await win.show();
+    await win.setFocus();
+  } catch {
+    // 某些环境下（如无头测试）可能不可用，忽略即可
+  }
+}
 
 onBeforeUnmount(() => {
   window.clearTimeout(focusTimer);

@@ -80,6 +80,28 @@ pub fn run() {
             let state = app.state::<AppState>();
             *state.startup_files.lock().unwrap() = startup_files.clone();
 
+            // 主窗口初始为隐藏（见 tauri.conf.json 的 visible: false），由前端在
+            // 首屏渲染完成后调用 show() 显示，以避免暴露 WebView 初始化期间的白屏。
+            //
+            // 兜底：若前端因脚本错误或权限问题未能显示窗口，用户将看不到任何界面。
+            // 这里启动一个延时任务，超时后若窗口仍不可见就强制显示，保证应用始终可用。
+            //
+            // 窗口操作必须在主线程执行，因此通过 run_on_main_thread 派发，
+            // 而不是直接在子线程里调用 show()。
+            let handle = app.handle().clone();
+            std::thread::spawn(move || {
+                std::thread::sleep(std::time::Duration::from_millis(3000));
+                let h = handle.clone();
+                let _ = handle.run_on_main_thread(move || {
+                    if let Some(window) = h.get_webview_window("main") {
+                        if !window.is_visible().unwrap_or(true) {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                        }
+                    }
+                });
+            });
+
             Ok(())
         })
         .on_menu_event(|app, event| {
