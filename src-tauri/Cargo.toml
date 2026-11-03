@@ -1,6 +1,6 @@
 [package]
 name = "plainmark"
-version = "0.1.1"
+version = "0.1.2"
 description = "像记事本一样简单的 Markdown 编辑器"
 authors = ["lanlan0811"]
 license = "MIT"
