@@ -18,6 +18,7 @@ import ConfirmSaveModal from "./components/ConfirmSaveModal.vue";
 import FontDialog from "./components/FontDialog.vue";
 import PreviewPane from "./components/PreviewPane.vue";
 import UpdateDialog from "./components/UpdateDialog.vue";
+import PromptDialog from "./components/PromptDialog.vue";
 import { useDocuments } from "./composables/useDocuments";
 import {
   checkForUpdate,
@@ -53,6 +54,10 @@ const confirmName = ref(UNTITLED);
 
 /** 字体对话框 */
 const fontDialogVisible = ref(false);
+
+/** 「转到行」对话框 */
+const gotoVisible = ref(false);
+const gotoMaxLine = ref(1);
 
 /** 自动更新状态 */
 const updater = useUpdater();
@@ -209,13 +214,13 @@ async function importDroppedFiles(paths: string[]) {
   if (!tab) return;
 
   if (!tab.path) {
-    window.alert("请先保存文档。图片会存放在文档同目录的 assets/ 下。");
+    await api.warn("请先保存文档。图片会存放在文档同目录的 assets/ 下。", "无法导入图片");
     return;
   }
 
   const images = paths.filter((p) => /\.(png|jpe?g|gif|webp|bmp|svg|avif|ico)$/i.test(p));
   if (images.length === 0) {
-    window.alert("只支持图片文件（png / jpg / gif / webp / bmp / svg 等）。");
+    await api.warn("只支持图片文件（png / jpg / gif / webp / bmp / svg 等）。", "无法导入");
     return;
   }
 
@@ -225,7 +230,7 @@ async function importDroppedFiles(paths: string[]) {
       const alt = asset.name.replace(/\.[^.]+$/, "");
       insertAtCursor(`![${alt}](${asset.relativePath})`);
     } catch (e) {
-      window.alert(`导入失败：${e}`);
+      await api.alert(`导入失败：${e}`, "导入出错");
     }
   }
 }
@@ -252,13 +257,7 @@ async function doSave(force = false): Promise<boolean> {
   if (!result) return false;
 
   if (!result.ok && result.lossy) {
-    // 编码无法表示部分字符，向用户确认
-    const sample = result.lossySample.join(" ");
-    const ok = window.confirm(
-      `此文件包含无法用 ${tab.encoding} 编码保存的字符：\n${sample}\n\n` +
-        `如果按当前编码保存，这些字符会丢失。是否继续？`,
-    );
-    if (ok) return doSave(true);
+    if (await confirmLossySave(tab.encoding, result.lossySample)) return doSave(true);
     return false;
   }
   return result.ok;
@@ -274,15 +273,23 @@ async function doSaveAs(force = false): Promise<boolean> {
 
   const result = await docs.saveActiveAs(path, tab.encoding, tab.eol, force);
   if (!result.ok && result.lossy) {
-    const sample = result.lossySample.join(" ");
-    const ok = window.confirm(
-      `此文件包含无法用 ${tab.encoding} 编码保存的字符：\n${sample}\n\n` +
-        `如果按当前编码保存，这些字符会丢失。是否继续？`,
-    );
-    if (ok) return doSaveAs(true);
+    if (await confirmLossySave(tab.encoding, result.lossySample)) return doSaveAs(true);
     return false;
   }
   return result.ok;
+}
+
+/**
+ * 编码无法表示全部字符时的确认。
+ *
+ * 记事本在这种情况下也会提示并让用户选择，行为保持一致。
+ */
+async function confirmLossySave(encoding: string, sample: string[]): Promise<boolean> {
+  return api.confirm(
+    `此文件包含无法用 ${encoding} 编码保存的字符：\n${sample.join(" ")}\n\n` +
+      `如果按当前编码保存，这些字符会丢失。是否继续？`,
+    "编码警告",
+  );
 }
 
 async function doOpen() {
@@ -380,16 +387,22 @@ function insertTimeDate() {
   });
 }
 
+/** 打开「转到行」对话框。 */
 function doGoto() {
-  const input = window.prompt("行号：");
-  if (!input) return;
-  const line = Number.parseInt(input, 10);
+  gotoVisible.value = true;
+  gotoMaxLine.value = view?.state.doc.lines ?? 1;
+}
+
+/** 「转到行」对话框确认后跳转。 */
+function onGotoConfirm(text: string) {
+  gotoVisible.value = false;
+
+  const line = Number.parseInt(text, 10);
   if (!Number.isFinite(line) || line < 1) return;
+
   withView((v) => {
-    // CodeMirror 的 gotoLine 会弹自己的输入框，这里先用 state 把光标移过去，
-    // 避免弹两次。用 dispatch 直接定位到目标行首。
-    const total = v.state.doc.lines;
-    const target = Math.min(line, total);
+    // 超出总行数时跳到末行，与记事本一致（不报错）
+    const target = Math.min(line, v.state.doc.lines);
     const info = v.state.doc.line(target);
     v.dispatch({
       selection: { anchor: info.from },
@@ -524,14 +537,16 @@ async function handleMenu(event: MenuEvent) {
       // 手动检查：若没有新版本要给出明确反馈，不能像自动检查那样静默
       const found = await checkForUpdate();
       if (!found) {
-        window.alert(`plainmark ${appVersion.value || ""} 已是最新版本。`);
+        await api.alert(`plainmark ${appVersion.value || ""} 已是最新版本。`, "检查更新");
       }
       break;
     }
     case "help.about":
-      window.alert(
-        `plainmark 0.1.0\n\n像记事本一样简单的 Markdown 编辑器\n\n` +
+      // 版本号取实际运行值，不硬编码——否则每次发版都要记得改这里
+      await api.alert(
+        `plainmark ${appVersion.value || ""}\n\n像记事本一样简单的 Markdown 编辑器\n\n` +
           `MIT License © 2026 lanlan0811`,
+        "关于 plainmark",
       );
       break;
     default:
@@ -689,14 +704,15 @@ async function checkExternalChanges() {
       // 文件已被删除或移动
       if (!tab.reloadPending) {
         tab.reloadPending = true;
-        window.alert(`${tab.name} 已被删除或移动。`);
+        await api.warn(`${tab.name} 已被删除或移动。`, "文件已变更");
       }
       continue;
     }
 
     if (tab.modifiedMs !== null && current !== tab.modifiedMs) {
-      const reload = window.confirm(
+      const reload = await api.confirm(
         `${tab.name} 已被其他程序修改。\n\n是否要重新加载？`,
+        "文件已变更",
       );
       if (reload) {
         docs.activate(tab.id);
@@ -790,6 +806,16 @@ watch(
       :italic="docs.fontItalic.value"
       @apply="onFontApply"
       @cancel="fontDialogVisible = false"
+    />
+
+    <PromptDialog
+      :visible="gotoVisible"
+      title="转到行"
+      :label="`行号（1 – ${gotoMaxLine}）`"
+      placeholder="输入行号后按回车"
+      numeric
+      @confirm="onGotoConfirm"
+      @cancel="gotoVisible = false"
     />
 
     <UpdateDialog

@@ -240,6 +240,29 @@ export function createEditorState(
 
       search({ top: true }),
 
+      // 查找/替换面板的中文文案。
+      // CodeMirror 内置文案是英文，通过 phrases facet 覆盖。
+      // 键名必须与 search 包里 phrase() 的调用参数逐字一致，否则不生效。
+      EditorState.phrases.of({
+        Find: "查找",
+        Replace: "替换",
+        next: "下一个",
+        previous: "上一个",
+        all: "全选匹配",
+        "match case": "区分大小写",
+        regexp: "正则表达式",
+        "by word": "全字匹配",
+        replace: "替换",
+        "replace all": "全部替换",
+        close: "关闭",
+        "current match": "当前匹配",
+        "on line": "位于第",
+        "replaced match on line $": "已替换第 $ 行的匹配项",
+        "replaced $ matches": "已替换 $ 处匹配",
+        "Go to line": "转到行",
+        go: "转到",
+      }),
+
       notepadKeymap,
       insertTab,
       keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap]),

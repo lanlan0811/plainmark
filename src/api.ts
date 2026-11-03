@@ -1,8 +1,39 @@
 /** Rust 后端的调用封装。所有文件系统操作都在 Rust 侧完成。 */
 
 import { invoke } from "@tauri-apps/api/core";
-import { open, save } from "@tauri-apps/plugin-dialog";
+import {
+  open,
+  save,
+  message as nativeMessage,
+  confirm as nativeConfirm,
+} from "@tauri-apps/plugin-dialog";
 import type { DocumentInfo, Encoding, Eol, SaveOptions, WriteResult } from "./types";
+
+/**
+ * 提示信息。
+ *
+ * 用 Tauri 的原生对话框而非 `window.alert()`：后者的标题会显示网页 origin
+ * （形如「tauri.localhost 显示」），与桌面应用观感严重不符。
+ */
+export async function alert(message: string, title = "plainmark"): Promise<void> {
+  // 用 buttons 而非已废弃的 okLabel
+  await nativeMessage(message, { title, kind: "info", buttons: { ok: "确定" } });
+}
+
+/** 警告信息（带警告图标）。 */
+export async function warn(message: string, title = "plainmark"): Promise<void> {
+  await nativeMessage(message, { title, kind: "warning", buttons: { ok: "确定" } });
+}
+
+/** 确认对话框。返回用户是否点击了「确定」。 */
+export async function confirm(message: string, title = "plainmark"): Promise<boolean> {
+  return nativeConfirm(message, {
+    title,
+    kind: "warning",
+    okLabel: "确定",
+    cancelLabel: "取消",
+  });
+}
 
 /** 打开一个文件并解析出内容、编码与换行符。 */
 export function readDocument(path: string): Promise<DocumentInfo> {
