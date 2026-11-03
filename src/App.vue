@@ -17,11 +17,9 @@ import StatusBar from "./components/StatusBar.vue";
 import ConfirmSaveModal from "./components/ConfirmSaveModal.vue";
 import FontDialog from "./components/FontDialog.vue";
 import PreviewPane from "./components/PreviewPane.vue";
-import ElementPanel from "./components/ElementPanel.vue";
 import { useDocuments } from "./composables/useDocuments";
 import { createEditorState } from "./editor/setup";
 import { getState } from "./editor/documents";
-import { extractBlocks } from "./preview/renderer";
 import { UNTITLED } from "./api";
 import * as api from "./api";
 import {
@@ -35,7 +33,6 @@ import {
 
 const docs = useDocuments();
 const editorHost = ref<HTMLElement | null>(null);
-const previewRef = ref<InstanceType<typeof PreviewPane> | null>(null);
 let view: EditorView | null = null;
 
 /** 光标位置，供状态栏显示 */
@@ -58,7 +55,6 @@ const unlisteners: UnlistenFn[] = [];
 /** 预览是否显示。宽度与开关状态持久化到 localStorage。 */
 const previewVisible = ref(readBool("plainmark.previewVisible", true));
 const previewWidth = ref(readNumber("plainmark.previewWidth", 420, 260, 900));
-const elementPanelVisible = ref(readBool("plainmark.elementPanelVisible", true));
 
 /** 当前文档源码，供预览渲染。由编辑器内容同步而来。 */
 const previewSource = ref("");
@@ -85,16 +81,12 @@ function persist() {
   try {
     localStorage.setItem("plainmark.previewVisible", String(previewVisible.value));
     localStorage.setItem("plainmark.previewWidth", String(previewWidth.value));
-    localStorage.setItem(
-      "plainmark.elementPanelVisible",
-      String(elementPanelVisible.value),
-    );
   } catch {
     // localStorage 不可用时忽略，不影响功能
   }
 }
 
-watch([previewVisible, previewWidth, elementPanelVisible], persist);
+watch([previewVisible, previewWidth], persist);
 
 /** 把编辑器内容同步到预览。 */
 function syncPreview() {
@@ -185,68 +177,6 @@ function insertAtCursor(markdown: string) {
     selection: { anchor: sel.from + insert.length },
   });
   v.focus();
-}
-
-// ---------- 元素面板 → 预览的拖拽 ----------
-
-/** 元素面板拖拽的载荷，用于在放下时插入。 */
-let draggingElement: string | null = null;
-
-/** 在指定块之前插入；index 为 null 表示插到文档末尾。 */
-function insertElementAt(markdown: string, index: number | null) {
-  const v = view;
-  if (!v) return;
-
-  if (index === null) {
-    // 插到末尾
-    insertAtCursor(markdown);
-    return;
-  }
-
-  // 按源码位置插入到目标块之前
-  const blocks = previewBlocks();
-  const target = blocks[index];
-  if (!target) {
-    insertAtCursor(markdown);
-    return;
-  }
-
-  const insert = `${markdown}\n\n`;
-  v.dispatch({
-    changes: { from: target.start, to: target.start, insert },
-    selection: { anchor: target.start + insert.length },
-  });
-  v.focus();
-}
-
-/** 取预览中当前渲染出的块区间。 */
-function previewBlocks() {
-  const el = document.querySelector<HTMLElement>(".pm-preview-content");
-  if (!el) return [];
-  return extractBlocks(el);
-}
-
-function onElementDragStart(markdown: string) {
-  draggingElement = markdown;
-}
-
-function onElementDragMove(x: number, y: number) {
-  previewRef.value?.showInsertHint(x, y);
-}
-
-function onElementDragEnd(x: number, y: number) {
-  const markdown = draggingElement;
-  draggingElement = null;
-
-  const index = previewRef.value?.resolveInsertTarget(x, y) ?? null;
-  previewRef.value?.clearInsertHint();
-
-  if (markdown) insertElementAt(markdown, index);
-}
-
-function onElementDragCancel() {
-  draggingElement = null;
-  previewRef.value?.clearInsertHint();
 }
 
 // ---------- 本地文件拖入 ----------
@@ -569,9 +499,6 @@ async function handleMenu(event: MenuEvent) {
     case "view.preview":
       previewVisible.value = !previewVisible.value;
       break;
-    case "view.element_panel":
-      elementPanelVisible.value = !elementPanelVisible.value;
-      break;
 
     case "help.view":
       await api.openHelp();
@@ -771,22 +698,10 @@ watch(
         :style="{ width: previewWidth + 'px' }"
       >
         <PreviewPane
-          ref="previewRef"
           :source="previewSource"
           :doc-path="docs.activeTab.value?.path ?? null"
           @reorder="replaceEditorText"
         />
-
-        <!-- 元素面板停靠在预览下方，方便把素材直接拖进预览 -->
-        <div v-if="elementPanelVisible" class="element-dock">
-          <ElementPanel
-            @insert="insertAtCursor"
-            @drag-start="onElementDragStart"
-            @drag-move="onElementDragMove"
-            @drag-end="onElementDragEnd"
-            @drag-cancel="onElementDragCancel"
-          />
-        </div>
       </div>
     </div>
 
@@ -885,14 +800,6 @@ watch(
   border-radius: var(--pm-radius-md);
   background: var(--pm-bg);
   box-shadow: var(--pm-shadow-sm);
-  overflow: hidden;
-}
-
-/* 元素面板停靠在预览下方，高度按内容，超出可滚动 */
-.element-dock {
-  flex: none;
-  max-height: 42%;
-  border-top: 1px solid var(--pm-border);
   overflow: hidden;
 }
 </style>

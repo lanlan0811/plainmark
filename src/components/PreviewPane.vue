@@ -27,16 +27,11 @@ const props = defineProps<{
 const emit = defineEmits<{
   /** 重排后要把新源码写回编辑器 */
   (e: "reorder", text: string): void;
-  /** 接收从元素面板拖来的素材，插入到指定块之前 */
-  (e: "insert", payload: { markdown: string; beforeIndex: number | null }): void;
 }>();
 
 const host = ref<HTMLElement | null>(null);
 const html = ref("");
 const error = ref<string | null>(null);
-/** 元素面板拖入时的落点提示 */
-const insertHintIndex = ref<number | null>(null);
-const insertHintAtEnd = ref(false);
 
 /** 渲染后处理：标记任务列表项。 */
 function decorate() {
@@ -98,8 +93,6 @@ function clearMarks() {
   el.querySelectorAll(".pm-dragging, .pm-drop-target").forEach((n) => {
     n.classList.remove("pm-dragging", "pm-drop-target");
   });
-  insertHintIndex.value = null;
-  insertHintAtEnd.value = false;
 }
 
 // ---------- 预览内：块重排 ----------
@@ -160,40 +153,6 @@ function onPointerDown(event: PointerEvent) {
   event.preventDefault();
 }
 
-/**
- * 元素面板拖到预览上时，显示插入落点。
- * 由父组件在指针移动时调用。
- */
-function showInsertHint(x: number, y: number) {
-  if (!isPointInside(host.value, x, y)) {
-    insertHintIndex.value = null;
-    insertHintAtEnd.value = false;
-    return;
-  }
-  const idx = blockIndexAt(x, y);
-  if (idx >= 0) {
-    insertHintIndex.value = idx;
-    insertHintAtEnd.value = false;
-  } else {
-    // 落在空白处：插到末尾
-    insertHintIndex.value = null;
-    insertHintAtEnd.value = true;
-  }
-}
-
-/** 元素拖拽结束：算出插入位置并通知父组件。 */
-function resolveInsertTarget(x: number, y: number): number | null {
-  if (!isPointInside(host.value, x, y)) return null;
-  const idx = blockIndexAt(x, y);
-  return idx >= 0 ? idx : null;
-}
-
-function clearInsertHint() {
-  insertHintIndex.value = null;
-  insertHintAtEnd.value = false;
-}
-
-defineExpose({ showInsertHint, resolveInsertTarget, clearInsertHint });
 </script>
 
 <template>
@@ -308,13 +267,6 @@ defineExpose({ showInsertHint, resolveInsertTarget, clearInsertHint });
 
 /* 放置目标：顶部品牌色指示线 */
 .pm-preview-content .pm-block.pm-drop-target {
-  box-shadow:
-    0 -2px 0 0 var(--pm-brand),
-    0 0 0 6px var(--pm-brand-soft);
-}
-
-/* 元素拖入时的插入落点 */
-.pm-preview-content .pm-block.pm-insert-before {
   box-shadow:
     0 -2px 0 0 var(--pm-brand),
     0 0 0 6px var(--pm-brand-soft);
