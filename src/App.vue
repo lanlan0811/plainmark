@@ -5,7 +5,7 @@
  * 所有菜单行为都在这里按 id 分发。原生菜单只在 Rust 侧处理「新建窗口」，
  * 其余一律通过 `plainmark://menu` 事件送到这里。
  */
-import { onMounted, onBeforeUnmount, ref, watch, nextTick } from "vue";
+import { computed, onMounted, onBeforeUnmount, ref, watch, nextTick } from "vue";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { EditorView } from "@codemirror/view";
@@ -56,8 +56,19 @@ const unlisteners: UnlistenFn[] = [];
 const previewVisible = ref(readBool("plainmark.previewVisible", true));
 const previewWidth = ref(readNumber("plainmark.previewWidth", 420, 260, 900));
 
-/** 当前文档源码，供预览渲染。由编辑器内容同步而来。 */
-const previewSource = ref("");
+/**
+ * 当前文档源码，供预览渲染。
+ *
+ * 依赖两个响应式信号：`contentVersion`（useDocuments 在每次内容变更时递增，
+ * 覆盖编辑与 setState 两条路径）和 `activeId`（标签切换）。
+ * 直接读 `view.state` 是非响应式的，所以必须靠这两个信号驱动重算。
+ */
+const previewSource = computed(() => {
+  void docs.contentVersion.value;
+  void docs.activeId.value;
+  const v = view;
+  return v ? v.state.doc.toString() : "";
+});
 
 function readBool(key: string, fallback: boolean): boolean {
   try {
@@ -87,12 +98,6 @@ function persist() {
 }
 
 watch([previewVisible, previewWidth], persist);
-
-/** 把编辑器内容同步到预览。 */
-function syncPreview() {
-  const v = view;
-  previewSource.value = v ? v.state.doc.toString() : "";
-}
 
 /** 分隔条拖拽调宽。 */
 let resizing = false;
@@ -140,7 +145,7 @@ function buildEditor() {
       if (tr.docChanged) {
         docs.persistActiveState();
         docs.markDirty();
-        syncPreview();
+        docs.contentVersion.value++;
       }
       updateCursor();
     },
@@ -148,7 +153,7 @@ function buildEditor() {
 
   docs.attachView(view);
   updateCursor();
-  syncPreview();
+  docs.contentVersion.value++;
 }
 
 /** 把编辑器内容整体替换掉（拖拽重排、插入元素后使用）。 */

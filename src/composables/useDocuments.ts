@@ -28,6 +28,19 @@ export function useDocuments() {
   const activeId = ref<number | null>(null);
   const view = shallowRef<EditorView | null>(null);
 
+  /**
+   * 内容版本号。
+   *
+   * 凡是通过 `view.setState()` 替换编辑器内容的操作（切换标签、重新加载），
+   * 都不会经过 dispatch，因而不会触发 docChanged。外部（预览）若只依赖
+   * dispatch 回调就会漏更新。这里让每条会改变内容的路径都递增它。
+   */
+  const contentVersion = ref(0);
+
+  function bumpContentVersion() {
+    contentVersion.value++;
+  }
+
   /** 全局的自动换行与字号，对所有标签生效（记事本的设置也是全局的）。 */
   const wordWrap = ref(false);
   const zoom = ref(100);
@@ -88,6 +101,8 @@ export function useDocuments() {
     const v = view.value;
     const state = getState(id);
     if (v && state) v.setState(state);
+    // setState 不经过 dispatch，需显式通知内容已变
+    bumpContentVersion();
     syncTitle();
   }
 
@@ -102,6 +117,9 @@ export function useDocuments() {
     if (v && state) {
       v.setState(state);
       if (focus) v.focus();
+      // setState 不经过 dispatch，统一在这里通知内容已变，
+      // 覆盖新建标签、打开文件、外部改动重载三条路径
+      bumpContentVersion();
     }
   }
 
@@ -248,6 +266,7 @@ export function useDocuments() {
     fontItalic,
     fontSizeCss,
     anyDirty,
+    contentVersion,
     attachView,
     persistActiveState,
     activate,
