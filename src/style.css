@@ -16,40 +16,41 @@
   --pm-brand-strong: #4f46e5;
   --pm-brand-soft: #eef0ff;
   --pm-brand-border: #c7cbfa;
+  --pm-brand-violet: #8b5cf6;
 
   /* ---- 中性色 ----
      统一带一点靛蓝倾向，避免纯灰的呆板，也让整体色调与品牌一致。 */
   --pm-bg: #ffffff; /* 编辑区底色，保持纯白以确保文字清晰 */
-  --pm-chrome: #f8f8fc; /* 标签栏 / 状态栏底色 */
-  --pm-chrome-strong: #eef0f7; /* 悬停态 */
+  --pm-chrome: #f6f6fb; /* 工作区外圈底色 */
+  --pm-chrome-strong: #eceefa; /* 悬停态 */
   --pm-fg: #1f2033; /* 正文，带靛蓝倾向的深色 */
-  --pm-fg-muted: #6b7280; /* 次要文字 */
-  --pm-fg-subtle: #9ca3af; /* 更弱的提示文字 */
-  --pm-border: #e3e4ef;
-  --pm-border-strong: #d2d4e4;
+  --pm-fg-muted: #63667a; /* 次要文字 */
+  --pm-fg-subtle: #9a9caf; /* 更弱的提示文字 */
+  --pm-border: #e6e7f2;
+  --pm-border-strong: #d5d7e6;
 
   /* ---- 语义色 ---- */
   --pm-selection: #d9dcff;
   --pm-caret: #4f46e5;
 
   /* ---- 圆角 ----（记事本全直角，这里用圆角形成明确区隔）
-  --pm-radius-sm: 4px;
-  --pm-radius-md: 6px;
-  --pm-radius-lg: 10px;
+  --pm-radius-sm: 5px;
+  --pm-radius-md: 8px;
+  --pm-radius-lg: 12px;
 
   /* ---- 阴影 ---- */
   --pm-shadow-sm: 0 1px 2px rgba(31, 32, 51, 0.06);
-  --pm-shadow-md: 0 6px 20px rgba(31, 32, 51, 0.14);
-  --pm-shadow-lg: 0 16px 40px rgba(31, 32, 51, 0.2);
+  --pm-shadow-md: 0 10px 30px rgba(31, 32, 51, 0.16);
+  --pm-shadow-lg: 0 20px 48px rgba(31, 32, 51, 0.22);
 
   /* ---- 尺寸 ---- */
-  --pm-tabbar-height: 34px;
+  --pm-titlebar-height: 40px;
   --pm-statusbar-height: 26px;
 
   /* ---- 编辑区字体 ----
      由「查看 → 缩放」与「格式 → 字体」驱动。 */
   --pm-font-size: 11pt;
-  --pm-font-family: Consolas, "Courier New", ui-monospace, monospace;
+  --pm-font-family: "Cascadia Mono", Consolas, "Courier New", ui-monospace, monospace;
 
   /* ---- 动效 ---- */
   --pm-transition: 120ms ease;

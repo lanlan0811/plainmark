@@ -2,8 +2,8 @@
 
 mod commands;
 mod io;
-mod menu;
 mod state;
+mod window;
 
 use std::path::PathBuf;
 use std::time::Instant;
@@ -11,9 +11,6 @@ use std::time::Instant;
 use tauri::{Emitter, Manager};
 
 use state::AppState;
-
-/// 从前端接收菜单事件时使用的通道名。
-const MENU_EVENT: &str = "plainmark://menu";
 
 /// 进程启动时刻，用于统计启动耗时。
 ///
@@ -123,13 +120,11 @@ pub fn run() {
             commands::file_modified_ms,
             commands::import_image,
             commands::exit_app,
+            commands::new_window,
             commands::report_startup_milestone,
         ])
         .setup(move |app| {
             startup_log("setup 开始");
-
-            menu::build(app.handle())?;
-            startup_log("菜单构建完成");
 
             let state = app.state::<AppState>();
             *state.startup_files.lock().unwrap() = startup_files.clone();
@@ -175,36 +170,8 @@ pub fn run() {
 
             Ok(())
         })
-        .on_menu_event(|app, event| {
-            let id = event.id().0.as_str();
-
-            // 只有「新建窗口」完全在 Rust 侧处理；其余（含退出）都转给前端，
-            // 因为退出需要先走前端的未保存提示流程。
-            if id == "file.new_window" {
-                if let Err(e) = menu::open_new_window(app) {
-                    eprintln!("新建窗口失败：{e}");
-                }
-                return;
-            }
-
-            // 菜单事件不带窗口 label，转发给当前聚焦的窗口
-            let target = app
-                .webview_windows()
-                .into_iter()
-                .find(|(_, w)| w.is_focused().unwrap_or(false))
-                .map(|(label, _)| label)
-                .unwrap_or_else(|| "main".to_string());
-
-            let _ = app.emit_to(target, MENU_EVENT, MenuEventPayload { id: id.to_string() });
-        })
         .run(tauri::generate_context!())
         .expect("启动 plainmark 失败");
-}
-
-/// 转发给前端的菜单事件载荷。
-#[derive(Clone, serde::Serialize)]
-struct MenuEventPayload {
-    id: String,
 }
 
 /// 首次启动时把窗口尺寸收敛到屏幕可用区域内。

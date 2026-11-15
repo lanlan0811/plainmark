@@ -70,6 +70,11 @@ export function closeWindow(): Promise<void> {
   return invoke("close_window");
 }
 
+/** 打开一个新的应用窗口。 */
+export function newWindow(): Promise<void> {
+  return invoke("new_window");
+}
+
 /** 退出应用。 */
 export function exitApp(): Promise<void> {
   return invoke("exit_app");

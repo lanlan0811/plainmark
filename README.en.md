@@ -31,7 +31,7 @@ Both require **Windows 10 or later**. If you already have an older version, use 
 
 **Notepad-like**
 
-- Native menu bar (File / Edit / Format / View / Help) and status bar, matching Windows Notepad's layout and shortcuts
+- **Custom-drawn menu bar** (File / Edit / Format / View / Help) and status bar. Same structure and shortcuts as Windows Notepad, but with the app's own visual language: rounded flyouts, brand-coloured hover states, Alt+F/E/O/V/H and arrow-key navigation
 - Status bar shows line/column, zoom, line endings, and encoding — clickable fields change on the spot
 - Unsaved-changes prompt (Save / Don't Save / Cancel), external-change detection, drag-and-drop open, command-line file arguments
 - Single instance: launching again opens a new tab in the existing window

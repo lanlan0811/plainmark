@@ -65,6 +65,12 @@ pub fn report_startup_milestone(name: String) {
     );
 }
 
+/// 打开一个新的应用窗口。
+#[tauri::command]
+pub fn new_window(app: AppHandle) -> Result<(), String> {
+    crate::window::open_new_window(&app).map_err(|e| e.to_string())
+}
+
 /// 关闭当前窗口。
 #[tauri::command]
 pub fn close_window(window: Window) -> Result<(), String> {

@@ -2,8 +2,8 @@
 /**
  * 标签栏。
  *
- * 视觉上是独立设计：圆角标签、品牌色选中态、悬停反馈。
- * 刻意不做成 Win11 记事本那种「顶部细线 + 全直角」的样式。
+ * 与菜单栏同处顶部一行：菜单在左、标签在右。标签本身用圆角胶囊与品牌色
+ * 选中态，刻意不做成 Win11 记事本那种「顶部细线 + 全直角」的样式。
  */
 import type { Tab } from "../editor/documents";
 import { tabLabel } from "../editor/documents";
@@ -77,6 +77,8 @@ function onMouseDown(event: MouseEvent, id: number) {
         />
       </svg>
     </button>
+
+    <span class="tabbar-fill"></span>
   </div>
 </template>
 
@@ -85,23 +87,30 @@ function onMouseDown(event: MouseEvent, id: number) {
   display: flex;
   align-items: center;
   gap: 6px;
-  height: var(--pm-tabbar-height);
-  padding: 0 8px;
-  background: var(--pm-chrome);
-  border-bottom: 1px solid var(--pm-border);
-  flex: none;
+  height: 100%;
+  min-width: 0;
+  flex: 1;
+  padding: 0;
+  background: transparent;
+  border-bottom: none;
 }
 
 .tab-list {
   display: flex;
   align-items: center;
   gap: 4px;
-  flex: 1;
+  flex: 0 1 auto;
   min-width: 0;
   overflow-x: auto;
   overflow-y: hidden;
   /* 标签本身已够紧凑，不需要滚动条视觉干扰 */
   scrollbar-width: none;
+}
+
+/* 剩余空白把「新建」按钮紧随最后一个标签，右侧留白属于窗口 chrome */
+.tabbar-fill {
+  flex: 1;
+  min-width: 0;
 }
 
 .tab-list::-webkit-scrollbar {
@@ -134,11 +143,11 @@ function onMouseDown(event: MouseEvent, id: number) {
   color: var(--pm-fg);
 }
 
-/* 选中态：白底 + 品牌色描边，形成明确的「当前文档」标识 */
+/* 选中态：品牌浅底 + 描边，和菜单的悬停态共用一套色彩语言 */
 .tab.active {
-  background: var(--pm-bg);
+  background: var(--pm-brand-soft);
   border-color: var(--pm-brand-border);
-  color: var(--pm-fg);
+  color: var(--pm-brand-strong);
   box-shadow: var(--pm-shadow-sm);
 }
 

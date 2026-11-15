@@ -1,9 +1,9 @@
 <script setup lang="ts">
 /**
- * 应用根组件：组装标签栏、编辑区与状态栏，并处理来自原生菜单的事件。
+ * 应用根组件：组装菜单栏、标签栏、编辑区与状态栏。
  *
- * 所有菜单行为都在这里按 id 分发。原生菜单只在 Rust 侧处理「新建窗口」，
- * 其余一律通过 `plainmark://menu` 事件送到这里。
+ * 菜单栏是应用内自绘的（MenuBar.vue），不使用 Win32 原生菜单——原生菜单由系统
+ * 绘制，外观固定且无法定制。菜单命令与快捷键统一在 `runCommand()` 中分发。
  */
 import { computed, onMounted, onBeforeUnmount, ref, watch, nextTick } from "vue";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
@@ -12,6 +12,7 @@ import { EditorView } from "@codemirror/view";
 import { undo, redo, selectAll, deleteCharBackward } from "@codemirror/commands";
 import { openSearchPanel, findNext, findPrevious } from "@codemirror/search";
 
+import MenuBar from "./components/MenuBar.vue";
 import TabBar from "./components/TabBar.vue";
 import StatusBar from "./components/StatusBar.vue";
 import ConfirmSaveModal from "./components/ConfirmSaveModal.vue";
@@ -37,7 +38,6 @@ import {
   ZOOM_STEP,
   type Encoding,
   type Eol,
-  type MenuEvent,
 } from "./types";
 
 const docs = useDocuments();
@@ -448,12 +448,15 @@ function zoomReset() {
   docs.applyZoom();
 }
 
-// ---------- 菜单事件分发 ----------
+// ---------- 菜单命令分发 ----------
 
-async function handleMenu(event: MenuEvent) {
-  switch (event.id) {
+async function runCommand(id: string) {
+  switch (id) {
     case "file.new":
       doNewTab();
+      break;
+    case "file.new_window":
+      await api.newWindow();
       break;
     case "file.open":
       guardUnsaved(doOpen);
@@ -553,6 +556,100 @@ async function handleMenu(event: MenuEvent) {
   }
 }
 
+/**
+ * 全局快捷键。
+ *
+ * 菜单改为应用内自绘后，原生菜单的 accelerator 不再生效，需要在这里补齐。
+ * 文本编辑类快捷键（撤销、复制粘贴、全选等）交给 CodeMirror 与浏览器处理，
+ * 不在此拦截。
+ */
+function onGlobalKeydown(event: KeyboardEvent) {
+  if (event.defaultPrevented) return;
+
+  // 模态对话框打开时不接管快捷键：按键属于对话框（输入、确认、取消）
+  if (document.querySelector(".overlay")) return;
+
+  const mod = event.ctrlKey || event.metaKey;
+
+  if (mod && !event.altKey) {
+    // Ctrl+Shift+… 的组合
+    if (event.shiftKey) {
+      switch (event.key.toLowerCase()) {
+        case "n":
+          event.preventDefault();
+          void runCommand("file.new_window");
+          break;
+        case "s":
+          event.preventDefault();
+          void runCommand("file.save_as");
+          break;
+        default:
+          break;
+      }
+      return;
+    }
+
+    switch (event.key.toLowerCase()) {
+      case "n":
+        event.preventDefault();
+        void runCommand("file.new");
+        break;
+      case "o":
+        event.preventDefault();
+        void runCommand("file.open");
+        break;
+      case "s":
+        event.preventDefault();
+        void runCommand("file.save");
+        break;
+      case "h":
+        event.preventDefault();
+        void runCommand("edit.replace");
+        break;
+      case "g":
+        event.preventDefault();
+        void runCommand("edit.goto");
+        break;
+      case "f":
+        event.preventDefault();
+        void runCommand("edit.find");
+        break;
+      case "=":
+      case "+":
+        event.preventDefault();
+        zoomIn();
+        break;
+      case "-":
+        event.preventDefault();
+        zoomOut();
+        break;
+      case "0":
+        event.preventDefault();
+        zoomReset();
+        break;
+      default:
+        break;
+    }
+    return;
+  }
+
+  if (!mod && !event.altKey) {
+    switch (event.key) {
+      case "F3":
+        event.preventDefault();
+        if (event.shiftKey) doFindPrev();
+        else doFindNext();
+        break;
+      case "F5":
+        event.preventDefault();
+        insertTimeDate();
+        break;
+      default:
+        break;
+    }
+  }
+}
+
 // ---------- 状态栏交互 ----------
 
 function onSetEol(eol: Eol) {
@@ -596,6 +693,14 @@ onMounted(async () => {
 
   await nextTick();
 
+  // 快捷键监听先于其他初始化注册：即使后续某个监听注册失败，
+  // 菜单快捷键也不应随之失效。
+  //
+  // 用捕获阶段：编辑器内部的 CodeMirror 会先一步处理部分组合键（如 Ctrl+G、
+  // Ctrl+F），冒泡阶段到达时已被 preventDefault。菜单快捷键的语义优先于
+  // 编辑器默认绑定，必须在捕获阶段拦截。
+  window.addEventListener("keydown", onGlobalKeydown, true);
+
   // 先建好编辑器：这一步决定首屏内容，必须在显示窗口之前完成
   docs.newTab();
   buildEditor();
@@ -622,8 +727,6 @@ onMounted(async () => {
   // 串行 await 会把启动时间累加，并行只需一轮往返的时间。
   const win = getCurrentWindow();
   const registered = await Promise.all([
-    listen<MenuEvent>("plainmark://menu", (e) => void handleMenu(e.payload)),
-
     // 第二次启动时由单实例回调送来的文件
     listen<string[]>("plainmark://open-files", async (e) => {
       for (const path of e.payload) await docs.openPath(path);
@@ -688,6 +791,7 @@ async function appVersion_init() {
 
 onBeforeUnmount(() => {
   window.clearTimeout(focusTimer);
+  window.removeEventListener("keydown", onGlobalKeydown, true);
   for (const un of unlisteners) un();
   view?.destroy();
 });
@@ -746,13 +850,49 @@ watch(
 
 <template>
   <div class="app">
-    <TabBar
-      :tabs="docs.tabs.value"
-      :active-id="docs.activeId.value"
-      @select="docs.activate"
-      @close="doCloseTab"
-      @new="doNewTab"
-    />
+    <header class="titlebar">
+      <span class="app-mark" aria-hidden="true">
+        <svg viewBox="0 0 16 16" width="13" height="13">
+          <path
+            d="M3.2 1.6 H9.5 L12.8 4.9 V14.4 H3.2 Z"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linejoin="round"
+          />
+          <path
+            d="M9.5 1.6 V4.9 H12.8"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linejoin="round"
+          />
+          <path
+            d="M5.4 8.2 V11.9 M5.4 8.2 L7 10.4 L8.6 8.2 V11.9"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.3"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </span>
+      <MenuBar
+        :word-wrap="docs.wordWrap.value"
+        :status-bar="docs.statusBarVisible.value"
+        :preview="previewVisible"
+        @command="runCommand"
+      />
+      <span class="titlebar-divider" aria-hidden="true"></span>
+
+      <TabBar
+        :tabs="docs.tabs.value"
+        :active-id="docs.activeId.value"
+        @select="docs.activate"
+        @close="doCloseTab"
+        @new="doNewTab"
+      />
+    </header>
 
     <!-- 工作区：编辑区 + 预览侧边栏 -->
     <div class="workspace">
@@ -851,6 +991,42 @@ watch(
   overflow: hidden;
   /* 外圈浅色 chrome，编辑区与预览是内嵌的白色面板——形成明确的层次感 */
   background: var(--pm-chrome);
+}
+
+/* 顶部工具条：菜单 + 标签同处一行，构成窗口唯一的一条 chrome。
+   白色底 + 细描边，与记事本「灰底菜单行 + 文档标签行」的两层结构区分开。 */
+.titlebar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  height: var(--pm-titlebar-height);
+  padding: 0 10px;
+  background: var(--pm-bg);
+  border-bottom: 1px solid var(--pm-border);
+  box-shadow: 0 1px 0 rgba(31, 32, 51, 0.02);
+}
+
+/* 品牌标记：与图标一致的小文档轮廓，给工具条一个视觉锚点 */
+.app-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  background: linear-gradient(135deg, var(--pm-brand), var(--pm-brand-violet));
+  box-shadow: 0 1px 3px rgba(79, 70, 229, 0.35);
+  color: #ffffff;
+}
+
+.titlebar-divider {
+  flex: none;
+  width: 1px;
+  height: 16px;
+  background: var(--pm-border-strong);
+  opacity: 0.7;
 }
 
 .workspace {

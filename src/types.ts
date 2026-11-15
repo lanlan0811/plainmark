@@ -43,11 +43,6 @@ export interface SaveOptions {
   eol: Eol;
 }
 
-/** 后端菜单事件。id 与 menu.rs 中注册的 id 一一对应。 */
-export interface MenuEvent {
-  id: string;
-}
-
 export const ENCODING_LABELS: Record<Encoding, string> = {
   Ansi: "ANSI",
   Utf8: "UTF-8",
