@@ -850,49 +850,22 @@ watch(
 
 <template>
   <div class="app">
-    <header class="titlebar">
-      <span class="app-mark" aria-hidden="true">
-        <svg viewBox="0 0 16 16" width="13" height="13">
-          <path
-            d="M3.2 1.6 H9.5 L12.8 4.9 V14.4 H3.2 Z"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.5"
-            stroke-linejoin="round"
-          />
-          <path
-            d="M9.5 1.6 V4.9 H12.8"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.5"
-            stroke-linejoin="round"
-          />
-          <path
-            d="M5.4 8.2 V11.9 M5.4 8.2 L7 10.4 L8.6 8.2 V11.9"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.3"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
-      </span>
+    <header class="menubar-row">
       <MenuBar
         :word-wrap="docs.wordWrap.value"
         :status-bar="docs.statusBarVisible.value"
         :preview="previewVisible"
         @command="runCommand"
       />
-      <span class="titlebar-divider" aria-hidden="true"></span>
-
-      <TabBar
-        :tabs="docs.tabs.value"
-        :active-id="docs.activeId.value"
-        @select="docs.activate"
-        @close="doCloseTab"
-        @new="doNewTab"
-      />
     </header>
+
+    <TabBar
+      :tabs="docs.tabs.value"
+      :active-id="docs.activeId.value"
+      @select="docs.activate"
+      @close="doCloseTab"
+      @new="doNewTab"
+    />
 
     <!-- 工作区：编辑区 + 预览侧边栏 -->
     <div class="workspace">
@@ -993,40 +966,17 @@ watch(
   background: var(--pm-chrome);
 }
 
-/* 顶部工具条：菜单 + 标签同处一行，构成窗口唯一的一条 chrome。
-   白色底 + 细描边，与记事本「灰底菜单行 + 文档标签行」的两层结构区分开。 */
-.titlebar {
+/* 菜单行：白底 + 细描边，作为窗口最上方的一条 chrome。
+   标签另起一行（见 TabBar），与记事本「菜单行 + 标签行」的层次不同：
+   这里的标签是可拖拽感的圆角胶囊，不是页签式的方框。 */
+.menubar-row {
   display: flex;
   align-items: center;
-  gap: 8px;
   flex: none;
-  height: var(--pm-titlebar-height);
+  height: var(--pm-menubar-height);
   padding: 0 10px;
   background: var(--pm-bg);
   border-bottom: 1px solid var(--pm-border);
-  box-shadow: 0 1px 0 rgba(31, 32, 51, 0.02);
-}
-
-/* 品牌标记：与图标一致的小文档轮廓，给工具条一个视觉锚点 */
-.app-mark {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
-  width: 22px;
-  height: 22px;
-  border-radius: 7px;
-  background: linear-gradient(135deg, var(--pm-brand), var(--pm-brand-violet));
-  box-shadow: 0 1px 3px rgba(79, 70, 229, 0.35);
-  color: #ffffff;
-}
-
-.titlebar-divider {
-  flex: none;
-  width: 1px;
-  height: 16px;
-  background: var(--pm-border-strong);
-  opacity: 0.7;
 }
 
 .workspace {

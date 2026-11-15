@@ -16,7 +16,6 @@
   --pm-brand-strong: #4f46e5;
   --pm-brand-soft: #eef0ff;
   --pm-brand-border: #c7cbfa;
-  --pm-brand-violet: #8b5cf6;
 
   /* ---- 中性色 ----
      统一带一点靛蓝倾向，避免纯灰的呆板，也让整体色调与品牌一致。 */
@@ -44,7 +43,8 @@
   --pm-shadow-lg: 0 20px 48px rgba(31, 32, 51, 0.22);
 
   /* ---- 尺寸 ---- */
-  --pm-titlebar-height: 40px;
+  --pm-menubar-height: 32px;
+  --pm-tabbar-height: 34px;
   --pm-statusbar-height: 26px;
 
   /* ---- 编辑区字体 ----
