@@ -108,9 +108,9 @@ git push origin v0.1.0
 项目处于早期阶段，接口与结构可能频繁变动。欢迎通过 Issue 提出建议或报告问题。
 
 - [贡献指南](CONTRIBUTING.md)（[English](CONTRIBUTING.en.md)）—— 开发环境、提交流程、发布规则
-- [行为准则](CODE_OF_CONDUCT.md)
-- [安全策略](SECURITY.md) —— 如何私下报告漏洞
-- [更新日志](CHANGELOG.md)
+- [行为准则](CODE_OF_CONDUCT.md)（[English](CODE_OF_CONDUCT.en.md)）
+- [安全策略](SECURITY.md)（[English](SECURITY.en.md)）—— 如何私下报告漏洞
+- [更新日志](CHANGELOG.md)（[English](CHANGELOG.en.md)）
 
 ## 已知限制
 

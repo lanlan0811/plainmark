@@ -6,7 +6,7 @@ Thanks for your interest in plainmark. This document explains how to get involve
 
 ## Code of Conduct
 
-By participating in this project, you agree to abide by the [Code of Conduct](CODE_OF_CONDUCT.md).
+By participating in this project, you agree to abide by the [Code of Conduct](CODE_OF_CONDUCT.en.md).
 
 ## Project Scope
 

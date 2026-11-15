@@ -1,5 +1,7 @@
 # 安全策略
 
+**简体中文** | [English](SECURITY.en.md)
+
 ## 支持的版本
 
 plainmark 尚未发布任何正式版本，目前不提供安全更新支持。

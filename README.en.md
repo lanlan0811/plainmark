@@ -108,9 +108,9 @@ Once building and packaging both pass, a GitHub Release is created automatically
 The project is at an early stage, so APIs and structure may change frequently. Issues with suggestions or bug reports are welcome.
 
 - [Contributing Guide](CONTRIBUTING.en.md) — dev setup, workflow, release rules
-- [Code of Conduct](CODE_OF_CONDUCT.md)
-- [Security Policy](SECURITY.md) — how to report vulnerabilities privately
-- [Changelog](CHANGELOG.md)
+- [Code of Conduct](CODE_OF_CONDUCT.en.md)
+- [Security Policy](SECURITY.en.md) — how to report vulnerabilities privately
+- [Changelog](CHANGELOG.en.md)
 
 ## Known Limitations
 
