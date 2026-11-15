@@ -6,26 +6,49 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![Platform: Windows 10+](https://img.shields.io/badge/Platform-Windows%2010%2B-blue.svg)
+[![Release](https://img.shields.io/github/v/release/lanlan0811/plainmark)](https://github.com/lanlan0811/plainmark/releases/latest)
 
 ---
 
 ## 简介
 
-plainmark 的目标是做**像记事本一样的 Markdown 编辑器**——打开即写，没有侧边栏、没有插件市场、没有账号登录、没有云同步。
+plainmark 的目标是做**像记事本一样的 Markdown 编辑器**——打开即写，没有文件树、没有插件市场、没有账号登录、没有云同步。
 
 大多数 Markdown 编辑器越做越像 IDE，而 plainmark 只关心一件事：让你打开文件、写字、保存，然后关掉。
 
-## 状态
+## 下载
 
-> **开发中**，尚未发布正式版本。
+从 [Releases](https://github.com/lanlan0811/plainmark/releases/latest) 页面下载最新版：
 
-应用本体已完成，首个版本发布后会在此处更新下载链接。
+| 安装包 | 适用场景 |
+|---|---|
+| `plainmark_<版本>_x64-setup.exe` | NSIS 安装程序，体积小，推荐个人用户 |
+| `plainmark_<版本>_x64_zh-CN.msi` | MSI 安装包，适合企业批量分发 |
+
+两者均支持 **Windows 10 及以上**。已安装旧版本的用户可通过「帮助 → 检查更新」自动升级，无需手动下载。
 
 ## 特性
 
-- **像记事本**：原生菜单栏（文件 / 编辑 / 格式 / 查看 / 帮助）与状态栏，布局和快捷键对齐 Windows 记事本
-- **Markdown 语法高亮**：只给源码上色，不弹预览面板，编辑面始终是纯文本
+**像记事本**
+
+- 原生菜单栏（文件 / 编辑 / 格式 / 查看 / 帮助）与状态栏，布局和快捷键对齐 Windows 记事本
+- 状态栏显示行列位置、缩放、换行符与编码，可点击的字段即点即改
+- 未保存提示（保存 / 不保存 / 取消）、外部改动检测、拖放打开、命令行传参打开
+- 单实例运行：第二次启动会在已有窗口里开新标签
+- 记住窗口尺寸与位置，下次启动恢复（含最大化）
+
+**写作**
+
+- **Markdown 语法高亮**：只给源码上色，编辑面始终是纯文本，不打断写作
 - **标签页**：一个窗口开多个文档，每个标签独立撤销历史
+- **可视化预览侧边栏**：右侧预览，可调宽（260–900px）、可随时开关，宽度与开关状态会记住
+  - 支持 GitHub 风格表格、任务列表、删除线与裸链接自动识别
+  - 渲染结果经 DOMPurify 清洗，脚本与事件属性一律拦截
+  - **拖拽重排**：拖动预览中的块改变顺序，Markdown 源码同步更新
+- **图片拖入**：把图片拖进窗口即复制到文档同目录的 `assets/` 下，重名自动加序号，并插入相对路径
+
+**文件**
+
 - **编码无损**：ANSI / UTF-8 / UTF-8 BOM / UTF-16 LE / UTF-16 BE 自动识别，保存时原样写回
 - **换行符可切**：Windows (CRLF) / Unix (LF) / Macintosh (CR)，状态栏一键切换
 - **本地优先**：文件全部存在本地，不联网、不上传
@@ -37,6 +60,8 @@ plainmark 的目标是做**像记事本一样的 Markdown 编辑器**——打�
 |---|---|
 | 桌面框架 | [Tauri](https://tauri.app/) |
 | 前端 | [Vue 3](https://vuejs.org/) |
+| 编辑器 | [CodeMirror 6](https://codemirror.net/) |
+| 预览渲染 | [markdown-it](https://github.com/markdown-it/markdown-it) + [DOMPurify](https://github.com/cure53/DOMPurify) |
 | 后端 | Rust |
 | 目标平台 | Windows 10 及以上 |
 
@@ -86,6 +111,15 @@ git push origin v0.1.0
 - [行为准则](CODE_OF_CONDUCT.md)
 - [安全策略](SECURITY.md) —— 如何私下报告漏洞
 - [更新日志](CHANGELOG.md)
+
+## 已知限制
+
+- 打印与页面设置尚未实现，菜单中不提供
+- 字体对话框为自建界面（WebView2 无原生字体选择器），与记事本存在细微差异
+- 查找 / 替换使用编辑器内置面板，尚未做成记事本的中文独立对话框
+- 不接管 `.txt` 关联，避免抢占记事本的默认地位
+- 预览中的远程图片（如 shields.io 徽章）会联网加载
+- 启动速度受限于 WebView2 运行时初始化，无法与原生记事本完全一致
 
 ## 开源协议
 
