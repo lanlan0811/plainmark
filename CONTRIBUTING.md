@@ -1,5 +1,7 @@
 # 贡献指南
 
+**简体中文** | [English](CONTRIBUTING.en.md)
+
 感谢你对 plainmark 的关注。本文档说明如何参与贡献。
 
 ## 行为准则
