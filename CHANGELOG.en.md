@@ -7,6 +7,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.9] - 2026-11-16
+
+### Fixed
+
+- **Menus and tabs are back on two separate rows**: 0.1.8 merged the tabs into the menu row, which pushed the tabs right up against the menus and gave document tabs no clear position. The menu now owns the top row and tabs sit on their own row below it, matching 0.1.7's hierarchy while keeping the custom-drawn menu
+- **Removed the brand mark** from the menu row: the purple square competed with the menus for attention and duplicated the taskbar icon
+
+### Changed
+
+- Design tokens adjusted accordingly: `--pm-titlebar-height` renamed to `--pm-menubar-height` (32px), and the tab bar regains its own 34px height
+
 ## [0.1.8] - 2026-11-15
 
 ### Changed
