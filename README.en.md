@@ -114,10 +114,7 @@ The project is at an early stage, so APIs and structure may change frequently. I
 
 ## Known Limitations
 
-- Printing and page setup are not implemented and are absent from the menu
 - The font dialog is a custom UI (WebView2 has no native font picker), so it differs slightly from Notepad's
-- Find / Replace uses the editor's built-in panel; Notepad's standalone Chinese dialog is not yet replicated
-- plainmark does not take over the `.txt` association, to avoid displacing Notepad as the default
 - Remote images in the preview (e.g. shields.io badges) are fetched over the network
 - Startup speed is bounded by WebView2 runtime initialization and cannot fully match native Notepad
 
