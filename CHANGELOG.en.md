@@ -7,6 +7,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.8] - 2026-11-15
+
+### Changed
+
+- **The menu bar is now drawn in-app** instead of using the native system menu (whose look is fixed by the OS). Menus and tabs share a single top row, with rounded flyouts and brand-coloured hover states. Structure and shortcuts are unchanged, and Alt+F/E/O/V/H mnemonics plus arrow-key navigation are now supported
+- Added a brand mark to the top bar; the active tab now uses the brand tint, sharing one colour language with menu hover
+- Tuned design tokens: stronger contrast for muted text and borders, larger radii, Cascadia Mono preferred as the default editor font
+
 ## [0.1.7] - 2026-11-04
 
 ### Changed
